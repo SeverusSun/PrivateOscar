@@ -1,6 +1,8 @@
 <<<<<<< HEAD
 # Private_Oscar（私人奥斯卡）
 
+This is one website that allows users to import personal Douban account,nominate their private Oscar and Top adwards and generate social-media propaganda posters.
+
 基于你的豆瓣书影音档案，举办一场完全属于你自己的电影奥斯卡，并生成可以分享的专属海报。
 
 数据仅保存在你自己的浏览器本地（localStorage），不经过任何服务器，不上传、不分享。
@@ -24,7 +26,7 @@ npm install
 npm run dev
 ```
 
-浏览器访问终端中输出的地址（默认 `http://localhost:3000`）。
+浏览器访问终端中输出的地址（例如 `http://localhost:3000`）。
 
 ## 构建
 
@@ -33,8 +35,6 @@ npm run build   # 产物在 app/dist
 ```
 
 ## 技术栈
-
-React 19 · TypeScript · Vite · Tailwind CSS · shadcn/ui · html-to-image
 
 豆瓣数据经本地 Vite 代理获取（解决跨域与 Referer 校验），海报图同样走代理以便导出画布；海报由 DOM 离线渲染导出，字体使用系统楷体。
 
@@ -46,6 +46,4 @@ React 19 · TypeScript · Vite · Tailwind CSS · shadcn/ui · html-to-image
 
 本站为非商业个人项目，与豆瓣无关；电影海报、评分等内容的版权归原作者所有。生成的海报仅供个人纪念与分享，请勿用于商业用途。
 =======
-# PrivateOscar
-This is one website that allows users to import personal Douban account,nominate their private Oscar and Top adwards and generate social-media propaganda posters.
->>>>>>> ff7f46e93500a77d388f7275b739e2c4f6bbc11a
+
