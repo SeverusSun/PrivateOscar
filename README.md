@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Private_Oscar（私人奥斯卡）
 
 基于你的豆瓣书影音档案，举办一场完全属于你自己的电影奥斯卡，并生成可以分享的专属海报。
@@ -44,3 +45,7 @@ React 19 · TypeScript · Vite · Tailwind CSS · shadcn/ui · html-to-image
 ## 免责声明
 
 本站为非商业个人项目，与豆瓣无关；电影海报、评分等内容的版权归原作者所有。生成的海报仅供个人纪念与分享，请勿用于商业用途。
+=======
+# PrivateOscar
+This is one website that allows users to import personal Douban account,nominate their private Oscar and Top adwards and generate social-media propaganda posters.
+>>>>>>> ff7f46e93500a77d388f7275b739e2c4f6bbc11a
