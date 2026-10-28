@@ -128,7 +128,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           if (pending) {
             return (
               <div key={a.id} className="flex flex-col items-center rounded-md border border-dashed border-[#c9a227] bg-white/70 p-3 text-center">
-                <div className={`${big ? 'text-[22px]' : 'text-[16px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
+                <div className={`${big ? 'text-[26px]' : 'text-[20px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
                   {a.name}
                 </div>
                 <div
@@ -137,10 +137,10 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
                 >
                   <img src={oscarSilhouetteUrl} alt="未定奖杯剪影" crossOrigin="anonymous" style={{ height: big ? '86%' : '80%', opacity: 0.75 }} />
                 </div>
-                <div className={`w-full truncate ${big ? 'text-[28px]' : 'text-[20px]'} font-bold text-[#9ca3af]`} style={{ fontFamily: TITLE_FONT }}>
+                <div className={`w-full truncate ${big ? 'text-[32px]' : 'text-[24px]'} font-bold text-[#9ca3af]`} style={{ fontFamily: TITLE_FONT }}>
                   未定
                 </div>
-                <div className={`mt-0.5 ${big ? 'text-[18px]' : 'text-[14px]'} text-[#9ca3af]`}>感觉选不出合适的呢</div>
+                <div className={`mt-0.5 ${big ? 'text-[20px]' : 'text-[16px]'} text-[#9ca3af]`}>感觉选不出合适的呢</div>
               </div>
             )
           }
@@ -150,7 +150,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           const person = winNom ? resolvePerson(a, winNom, movie) : { name: '', image: '', manual: false }
           return (
             <div key={a.id} className="flex flex-col items-center rounded-md border border-[#d8d8cc] bg-white/70 p-3 text-center">
-              <div className={`${big ? 'text-[22px]' : 'text-[16px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
+              <div className={`${big ? 'text-[26px]' : 'text-[20px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
                 {a.name}
               </div>
               <div className={`${big ? 'my-3' : 'my-2'} flex items-center justify-center overflow-hidden rounded-sm bg-[#ecece2] shadow-sm`} style={{ width: imgW, height: Math.round((imgW * 3) / 2) }}>
@@ -168,18 +168,18 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
                   <span className="text-[11px] text-[#9ca3af]">未评出</span>
                 )}
               </div>
-              <div className={`w-full truncate ${big ? 'text-[28px]' : 'text-[20px]'} font-bold text-[#111827]`}>{person.name || movie?.title || '—'}</div>
+              <div className={`w-full truncate ${big ? 'text-[32px]' : 'text-[24px]'} font-bold text-[#111827]`}>{person.name || movie?.title || '—'}</div>
               {person.name && movie ? (
-                <div className={`mt-0.5 w-full truncate ${big ? 'text-[18px]' : 'text-[14px]'} text-[#4b5563]`}>《{movie.title}》</div>
+                <div className={`mt-0.5 w-full truncate ${big ? 'text-[20px]' : 'text-[16px]'} text-[#4b5563]`}>《{movie.title}》</div>
               ) : movie && (movie.directors.length > 0 || movie.year) ? (
-                <div className={`mt-0.5 w-full truncate ${big ? 'text-[18px]' : 'text-[14px]'} text-[#4b5563]`}>
+                <div className={`mt-0.5 w-full truncate ${big ? 'text-[20px]' : 'text-[16px]'} text-[#4b5563]`}>
                   {movie.directors.length > 0 ? movie.directors.map((d) => d.name).join(' / ') : movie.year}
                 </div>
               ) : null}
               {movie && (
-                <div className={`mt-auto flex w-full items-center justify-center gap-2 pt-2 ${big ? 'text-[19px]' : 'text-[15px]'} text-[#4b5563]`}>
+                <div className={`mt-auto flex w-full items-center justify-center gap-2 pt-2 ${big ? 'text-[21px]' : 'text-[17px]'} text-[#4b5563]`}>
                   豆瓣 <b style={{ color: RATING_ORANGE }}>{movie.doubanRating?.toFixed(1) ?? '—'}</b>
-                  <StarRow value={movie.userRating} size={big ? 20 : 16} emptyOutline />
+                  <StarRow value={movie.userRating} size={big ? 22 : 18} emptyOutline />
                 </div>
               )}
             </div>
