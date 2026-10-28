@@ -75,6 +75,9 @@ function DialogFilters({
   )
 }
 
+/** 演员类奖项：编辑资料时提供该片前 4 位演员作为候选，选中后自动匹配豆瓣照片 */
+const ACTOR_AWARD_IDS = ['best-actor', 'best-actress', 'best-supporting-actor', 'best-supporting-actress', 'favorite-actor', 'favorite-actress']
+
 /** 多选提名弹窗：勾选多部影片后点「完成提名」统一加入 */
 function NominationPickerDialog({
   open,
@@ -212,7 +215,7 @@ function NominationPickerDialog({
 }
 
 /** 人物资料编辑：上传照片/图片 + 姓名 + 简介（挂在某个提名上） */
-function PersonEditor({ value, onChange }: { value: PersonEntry | undefined; onChange: (p: PersonEntry | undefined) => void }) {
+function PersonEditor({ value, onChange, candidates }: { value: PersonEntry | undefined; onChange: (p: PersonEntry | undefined) => void; candidates?: string[] }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const p: PersonEntry = value || { name: '', image: '', intro: '', movieTitle: '' }
 
@@ -246,6 +249,21 @@ function PersonEditor({ value, onChange }: { value: PersonEntry | undefined; onC
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
       </div>
       <div className="flex-1 space-y-1.5">
+        {candidates && candidates.length > 0 && (
+          <select
+            className="h-8 w-full rounded-md border bg-background px-2 text-sm"
+            value=""
+            onChange={(e) => {
+              const name = e.target.value
+              if (name) onChange({ ...p, name })
+            }}
+          >
+            <option value="">从主演中选择（自动匹配照片）…</option>
+            {candidates.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        )}
         <Input
           className="h-8 text-sm"
           placeholder="人物姓名 / 设计方名称"
@@ -770,7 +788,15 @@ function AwardCard({ award, collapsed }: { award: AwardDef; collapsed?: boolean 
                   </div>
                   {isEditing && (
                     <div className="mt-1.5">
-                      <PersonEditor value={n.person} onChange={(p) => patchNomination(n.movieId, { person: p })} />
+                      <PersonEditor
+                        value={n.person}
+                        onChange={(p) => patchNomination(n.movieId, { person: p })}
+                        candidates={
+                          ACTOR_AWARD_IDS.includes(award.id)
+                            ? (movieById(n.movieId)?.actors ?? []).slice(0, 4).map((a) => a.name)
+                            : undefined
+                        }
+                      />
                     </div>
                   )}
                 </div>
