@@ -119,7 +119,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle }
                 </div>
               )}
               <div className="min-w-0 max-w-[440px] text-center">
-                <div className="text-[20px] font-bold leading-tight" style={{ color: rankColor, fontFamily: TITLE_FONT }}>
+                <div className="text-[45px] font-bold leading-tight" style={{ color: rankColor, fontFamily: TITLE_FONT }}>
                   TOP {rank}
                 </div>
                 {movie ? (

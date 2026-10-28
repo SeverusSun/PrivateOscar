@@ -128,7 +128,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           if (pending) {
             return (
               <div key={a.id} className="flex flex-col items-center rounded-md border border-dashed border-[#c9a227] bg-white/70 p-3 text-center">
-                <div className={`${big ? 'text-[26px]' : 'text-[20px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
+                <div className="text-[26px] font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT }}>
                   {a.name}
                 </div>
                 <div
@@ -150,7 +150,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           const person = winNom ? resolvePerson(a, winNom, movie) : { name: '', image: '', manual: false }
           return (
             <div key={a.id} className="flex flex-col items-center rounded-md border border-[#d8d8cc] bg-white/70 p-3 text-center">
-              <div className={`${big ? 'text-[26px]' : 'text-[20px]'} font-bold tracking-widest`} style={{ color: GOLD, fontFamily: AWARD_FONT }}>
+              <div className="text-[26px] font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT }}>
                 {a.name}
               </div>
               <div className={`${big ? 'my-3' : 'my-2'} flex items-center justify-center overflow-hidden rounded-sm bg-[#ecece2] shadow-sm`} style={{ width: imgW, height: Math.round((imgW * 3) / 2) }}>
@@ -247,7 +247,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
           const citation = !pendingWinner && winner ? (r.citation?.trim() || winner.shortComment.trim() || a.description.trim()) : ''
           return (
             <div key={a.id} className="flex items-start gap-4 border-b border-dashed border-[#d8d8cc] pb-3">
-              <div className="w-40 shrink-0 pt-0.5 text-right text-[15px] font-bold" style={{ color: GOLD, fontFamily: AWARD_FONT }}>
+              <div className="w-40 shrink-0 pt-0.5 text-right text-[20px] font-bold" style={{ color: GOLD, fontFamily: AWARD_FONT }}>
                 {a.name}
               </div>
               <div className="min-w-0 flex-1 space-y-1">
