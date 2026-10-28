@@ -22,6 +22,8 @@ interface StoreCtx extends AppState {
   toggleOptional: (id: string) => void
   /** 一键开启/关闭全部可选奖项 */
   setAllOptional: (on: boolean) => void
+  /** 一键开启/关闭全部传统奖项（原必选奖项，现为可开关） */
+  setAllClassic: (on: boolean) => void
   /** 一键开启/关闭全部自定义奖项 */
   setAllCustom: (on: boolean) => void
   /** 删除全部自定义奖项（含其评选数据） */
@@ -177,6 +179,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           enabledOptional: on ? AWARDS.filter((a) => !a.required).map((a) => a.id) : [],
         })),
+      setAllClassic: (on) =>
+        setState((s) => {
+          const classicIds = AWARDS.filter((a) => a.required).map((a) => a.id)
+          const enabledOptional = on
+            ? Array.from(new Set([...s.enabledOptional, ...classicIds]))
+            : s.enabledOptional.filter((x) => !classicIds.includes(x))
+          return { ...s, enabledOptional }
+        }),
       setAllCustom: (on) =>
         setState((s) => ({
           ...s,

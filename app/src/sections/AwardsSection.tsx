@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
-import { OPTIONAL_AWARDS, REQUIRED_AWARDS } from '@/data/awards'
+import { OPTIONAL_AWARDS, ORDERED_OPTIONAL_AWARDS, REQUIRED_AWARDS } from '@/data/awards'
 import { TBD_ID, type AwardDef, type Nomination, type PersonEntry } from '@/types'
 import { StarDisplay, RATING_RANGES, USER_RATING_OPTIONS, type UserRatingKey } from './LibrarySection'
 
@@ -803,7 +803,7 @@ function AwardCard({ award, collapsed }: { award: AwardDef; collapsed?: boolean 
 }
 
 export default function AwardsSection() {
-  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllCustom, customAwards, year, setYear, career, setCareer, movies, setAwardOrder, clearResults, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
+  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllClassic, setAllCustom, customAwards, year, setYear, career, setCareer, movies, setAwardOrder, clearResults, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
   const [customName, setCustomName] = useState('')
   const [descAwardId, setDescAwardId] = useState('')
   const [dragId, setDragId] = useState<string | null>(null)
@@ -853,6 +853,7 @@ export default function AwardsSection() {
   }
 
   const allOptionalOn = OPTIONAL_AWARDS.every((a) => enabledOptional.includes(a.id))
+  const allClassicOn = REQUIRED_AWARDS.every((a) => enabledOptional.includes(a.id))
   const allCustomOn = customAwards.length > 0 && customAwards.every((c) => c.enabled !== false)
   // 自定义奖项说明：下拉选择的目标奖项（失效时回退到第一个）
   const effectiveDescId = customAwards.some((c) => c.id === descAwardId) ? descAwardId : (customAwards[0]?.id ?? '')
@@ -1105,15 +1106,19 @@ export default function AwardsSection() {
       {awardMode === 'oscars' && (
       <>
       <div className="rounded-md border bg-card p-4">
-        {/* 必选奖项：常开，不可关闭 */}
+        {/* 传统奖项：默认开启，可整体或单独开关 */}
         <div className="mb-3 flex items-center gap-3">
-          <h3 className="font-bold">必选奖项</h3>
-          <span className="text-xs text-muted-foreground">{REQUIRED_AWARDS.length} 项已默认启用，不可关闭</span>
+          <h3 className="font-bold">传统奖项</h3>
+          <label className="flex cursor-pointer items-center gap-1">
+            <Switch className="scale-[0.8]" checked={allClassicOn} onCheckedChange={(v) => setAllClassic(!!v)} />
+            <span className="text-xs text-muted-foreground">开启全部传统奖项</span>
+          </label>
+          <span className="text-xs text-muted-foreground">{REQUIRED_AWARDS.length} 项默认开启</span>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {REQUIRED_AWARDS.map((a) => (
-            <label key={a.id} className="flex cursor-not-allowed items-center gap-2 text-sm">
-              <Switch checked disabled className="disabled:opacity-100" />
+            <label key={a.id} className="flex cursor-pointer items-center gap-2 text-sm">
+              <Switch checked={enabledOptional.includes(a.id)} onCheckedChange={() => toggleOptional(a.id)} />
               {a.name}
             </label>
           ))}
@@ -1146,7 +1151,7 @@ export default function AwardsSection() {
             </label>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {OPTIONAL_AWARDS.map((a) => (
+            {ORDERED_OPTIONAL_AWARDS.map((a) => (
               <label key={a.id} className="flex cursor-pointer items-center gap-2 text-sm">
                 <Switch checked={enabledOptional.includes(a.id)} onCheckedChange={() => toggleOptional(a.id)} />
                 {a.name}
@@ -1160,7 +1165,7 @@ export default function AwardsSection() {
               value={effectiveOptId}
               onChange={(e) => setOptDescId(e.target.value)}
             >
-              {OPTIONAL_AWARDS.map((a) => (
+              {ORDERED_OPTIONAL_AWARDS.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>

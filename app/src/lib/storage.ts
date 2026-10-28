@@ -1,5 +1,5 @@
 import type { AwardResult, MovieEntry, PersonEntry, Profile } from '@/types'
-import { AWARDS } from '@/data/awards'
+import { AWARDS, MOVED_TO_FRONT_IDS } from '@/data/awards'
 
 export interface AppState {
   profile: Profile | null
@@ -52,7 +52,13 @@ export function loadState(): AppState {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return defaultState
-    return { ...defaultState, ...(JSON.parse(raw) as AppState) }
+    const parsed = JSON.parse(raw) as AppState
+    // 迁移：传统奖项（原必选奖项）中的 6 项移入可选奖项，为老数据默认补开
+    const enabledOptional = [...(parsed.enabledOptional ?? [])]
+    for (const id of MOVED_TO_FRONT_IDS) {
+      if (!enabledOptional.includes(id)) enabledOptional.push(id)
+    }
+    return { ...defaultState, ...parsed, enabledOptional }
   } catch {
     return defaultState
   }

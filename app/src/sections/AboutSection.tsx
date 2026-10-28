@@ -116,7 +116,7 @@ export default function AboutSection() {
         <div className="flex gap-3">
           <Vote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div>
-            <b>评选</b>：两种评选模式——「奥斯卡」23 个必选奖项 + 14 个可选奖项 + 自定义奖项，逐一提名、颁奖、写颁奖词；「Top 榜」按名次排出你的 Top N 片单。
+            <b>评选</b>：两种评选模式——「奥斯卡」17 个传统奖项 + 20 个可选奖项 + 自定义奖项，逐一提名、颁奖、写颁奖词；「Top 榜」按名次排出你的 Top N 片单。
           </div>
         </div>
         <div className="flex gap-3">
