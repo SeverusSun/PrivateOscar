@@ -1204,38 +1204,37 @@ export default function AwardsSection() {
           </div>
         </div>
 
-        {/* 自定义奖项：开关 + 删除 */}
-        {customAwards.length > 0 && (
-          <div className="mt-3 border-t pt-3">
-            <div className="mb-2 flex items-center gap-3">
-              <div className="font-bold">自定义奖项</div>
-              <label className={`flex items-center gap-1 ${customAwards.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                <Switch
-                  className="scale-[0.8]"
-                  checked={allCustomOn}
-                  disabled={customAwards.length === 0}
-                  onCheckedChange={(v) => setAllCustom(!!v)}
-                />
-                <span className="text-xs text-muted-foreground">开启全部自定义奖项</span>
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              {customAwards.map((c) => (
-                <div key={c.id} className="flex items-center gap-1.5 text-sm">
-                  <Switch checked={c.enabled !== false} onCheckedChange={() => toggleCustomAward(c.id)} />
-                  <span className={c.enabled === false ? 'text-muted-foreground line-through' : ''}>{c.name}</span>
-                  <button
-                    className="text-muted-foreground transition hover:text-destructive"
-                    title="删除该奖项"
-                    onClick={() => removeCustomAward(c.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
+        {/* 自定义奖项：开关 + 删除（无自定义奖项时也展示该区域） */}
+        <div className="mt-3 border-t pt-3">
+          <div className="mb-2 flex items-center gap-3">
+            <div className="font-bold">自定义奖项</div>
+            <label className={`flex items-center gap-1 ${customAwards.length === 0 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+              <Switch
+                className="scale-[0.8]"
+                checked={allCustomOn}
+                disabled={customAwards.length === 0}
+                onCheckedChange={(v) => setAllCustom(!!v)}
+              />
+              <span className="text-xs text-muted-foreground">开启全部自定义奖项</span>
+            </label>
           </div>
-        )}
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {customAwards.length === 0 && <span className="text-sm text-muted-foreground">暂无自定义奖项，可在下方添加</span>}
+            {customAwards.map((c) => (
+              <div key={c.id} className="flex items-center gap-1.5 text-sm">
+                <Switch checked={c.enabled !== false} onCheckedChange={() => toggleCustomAward(c.id)} />
+                <span className={c.enabled === false ? 'text-muted-foreground line-through' : ''}>{c.name}</span>
+                <button
+                  className="text-muted-foreground transition hover:text-destructive"
+                  title="删除该奖项"
+                  onClick={() => removeCustomAward(c.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-3 flex gap-2">
           <Input
