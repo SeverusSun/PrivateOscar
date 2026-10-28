@@ -19,7 +19,7 @@ import { TBD_ID, type AwardDef, type Nomination, type PersonEntry } from '@/type
 import { StarDisplay, RATING_RANGES, USER_RATING_OPTIONS, type UserRatingKey } from './LibrarySection'
 
 /** Top 榜预设类别 */
-const TOP_CATEGORIES = ['最佳', '最爱', '导演', '科幻', '剧情', '爱情', '家庭', '惊悚', '奇幻', '喜剧', '历史', '动画']
+const TOP_CATEGORIES = ['最佳', '最爱', '导演', '男演', '女演', '科幻', '剧情', '爱情', '家庭', '惊悚', '奇幻', '喜剧', '历史', '动画']
 
 /** Top 榜「导演」类别的合成奖项定义：仅用于复用 resolvePerson 的导演照片自动匹配 */
 const TOP_DIRECTOR_AWARD: AwardDef = { id: 'top-director', name: '导演 Top', description: '', required: false, kind: 'manual' }
@@ -465,10 +465,10 @@ function TopCard({ rank, collapsed }: { rank: number; collapsed?: boolean }) {
   const [editing, setEditing] = useState(false)
   const pick = topPicks[String(rank)]
   const movie = pick ? movieById(pick.movieId) : undefined
-  const isDirector = topCategory === '导演'
-  // 导演类别：懒加载演职员数据，用于自动匹配导演照片（手动上传优先）
-  useCreditsLoader(pick && isDirector && movie ? [movie.id] : [])
-  const resolved = isDirector && movie && pick ? resolvePerson(TOP_DIRECTOR_AWARD, { movieId: movie.id, person: pick.person }, movie) : null
+  // 人物类类别（导演/男演/女演）：懒加载演职员数据，用于自动匹配人物照片（手动上传优先）
+  const isPersonCategory = topCategory === '导演' || topCategory === '男演' || topCategory === '女演'
+  useCreditsLoader(pick && isPersonCategory && movie ? [movie.id] : [])
+  const resolved = isPersonCategory && movie && pick ? resolvePerson(TOP_DIRECTOR_AWARD, { movieId: movie.id, person: pick.person }, movie) : null
 
   return (
     <Card
@@ -569,7 +569,15 @@ function TopCard({ rank, collapsed }: { rank: number; collapsed?: boolean }) {
           </div>
           {editing && (
             <div className="mt-1.5">
-              <PersonEditor value={pick.person} onChange={(p) => updateTopPick(rank, { person: p })} />
+              <PersonEditor
+                value={pick.person}
+                onChange={(p) => updateTopPick(rank, { person: p })}
+                candidates={
+                  topCategory === '男演' || topCategory === '女演'
+                    ? (movie?.actors ?? []).slice(0, 6).map((a) => a.name)
+                    : undefined
+                }
+              />
             </div>
           )}
           </>

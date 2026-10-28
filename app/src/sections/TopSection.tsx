@@ -36,14 +36,14 @@ function StarRow({ value, size = 14 }: { value: number | null; size?: number }) 
 /** 榜单海报：报头 + Top 1 ~ N 排名行（海报宽度 1080，高度随名次数量变化） */
 function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle }: { showAvatar: boolean; showOscar: boolean; medal: boolean; customTitle?: string; customSubtitle?: string }) {
   const { profile, year, career, topN, topCategory, topPicks, movieById } = useStore()
-  const isDirector = topCategory === '导演'
+  const isPersonCategory = topCategory === '导演' || topCategory === '男演' || topCategory === '女演'
   const heading =
     customTitle?.trim() ||
     `${profile?.name ? profile.name + ' ' : ''}${career ? '光影生涯' : year} ${topCategory} Top ${topN}`
   const subtitle = customSubtitle?.trim() || `PERSONAL TOP ${topN}`
   const ranks = Array.from({ length: topN }, (_, i) => i + 1)
-  // 懒加载入选影片的演职员数据，供导演类别自动匹配照片
-  useCreditsLoader(isDirector ? ranks.map((r) => topPicks[String(r)]?.movieId).filter((id): id is string => !!id) : [])
+  // 懒加载入选影片的演职员数据，供人物类类别（导演/男演/女演）自动匹配照片
+  useCreditsLoader(isPersonCategory ? ranks.map((r) => topPicks[String(r)]?.movieId).filter((id): id is string => !!id) : [])
   return (
     <div
       id="top-poster"
@@ -82,7 +82,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle }
         {ranks.map((rank) => {
           const pick = topPicks[String(rank)]
           const movie = pick ? movieById(pick.movieId) : undefined
-          const resolved = isDirector && movie && pick ? resolvePerson(TOP_DIRECTOR_AWARD, { movieId: movie.id, person: pick.person }, movie) : null
+          const resolved = isPersonCategory && movie && pick ? resolvePerson(TOP_DIRECTOR_AWARD, { movieId: movie.id, person: pick.person }, movie) : null
           const citation = pick ? (pick.citation?.trim() || movie?.shortComment.trim() || '') : ''
           // 前三名金银铜色调（可开关），关闭后所有名次统一烫金色
           const rankColor = medal ? (rank === 1 ? GOLD : rank === 2 ? '#9aa3ad' : rank === 3 ? '#b0793a' : GOLD) : GOLD
@@ -129,7 +129,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle }
                       《{movie.title}》
                     </div>
                     <div className="mt-0.5 truncate text-[15px] text-[#4b5563]">
-                      {isDirector ? movie.year : movie.directors.map((d) => d.name).join(' / ')}
+                      {isPersonCategory ? movie.year : movie.directors.map((d) => d.name).join(' / ')}
                     </div>
                     <div className="mt-1 flex items-center justify-center gap-2 text-[15px] text-[#4b5563]">
                       豆瓣 <b style={{ color: RATING_ORANGE }}>{movie.doubanRating?.toFixed(1) ?? '—'}</b>
