@@ -75,7 +75,7 @@ function DialogFilters({
   )
 }
 
-/** 演员类奖项：编辑资料时提供该片前 4 位演员作为候选，选中后自动匹配豆瓣照片 */
+/** 演员类奖项：编辑资料时提供该片前 6 位演员作为候选，选中后自动匹配豆瓣照片 */
 const ACTOR_AWARD_IDS = ['best-actor', 'best-actress', 'best-supporting-actor', 'best-supporting-actress', 'favorite-actor', 'favorite-actress']
 
 /** 多选提名弹窗：勾选多部影片后点「完成提名」统一加入 */
@@ -793,7 +793,7 @@ function AwardCard({ award, collapsed }: { award: AwardDef; collapsed?: boolean 
                         onChange={(p) => patchNomination(n.movieId, { person: p })}
                         candidates={
                           ACTOR_AWARD_IDS.includes(award.id)
-                            ? (movieById(n.movieId)?.actors ?? []).slice(0, 4).map((a) => a.name)
+                            ? (movieById(n.movieId)?.actors ?? []).slice(0, 6).map((a) => a.name)
                             : undefined
                         }
                       />
