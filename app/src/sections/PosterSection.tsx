@@ -52,8 +52,8 @@ function StarRow({ value, size = 14, emptyOutline = false }: { value: number | n
   )
 }
 
-/** 名单行：👑/空 独立成列，片名 / 导演 / 豆瓣评分 / 用户星级 */
-function ListLine({ movie, person, color, winner }: { movie: MovieEntry; person?: string; color: string; winner?: boolean }) {
+/** 名单行：👑/空 独立成列，片名 / 导演 / 豆瓣评分 / 用户星级；directorAward 时不重复显示影片导演 */
+function ListLine({ movie, person, color, winner, directorAward }: { movie: MovieEntry; person?: string; color: string; winner?: boolean; directorAward?: boolean }) {
   return (
     <div className="flex items-baseline text-[14px]" style={{ color }}>
       <span className="mr-1.5 inline-block w-4 shrink-0 text-center">{winner ? '👑' : ''}</span>
@@ -62,7 +62,7 @@ function ListLine({ movie, person, color, winner }: { movie: MovieEntry; person?
           {person ? `${person} ` : ''}
           {movie.title}
         </span>
-        {movie.directors.length ? `　${movie.directors.map((d) => d.name).join(' / ')}` : ''}　豆瓣 {movie.doubanRating?.toFixed(1) ?? '—'}　
+        {!directorAward && movie.directors.length ? `　${movie.directors.map((d) => d.name).join(' / ')}` : ''}　豆瓣 {movie.doubanRating?.toFixed(1) ?? '—'}　
         <StarRow value={movie.userRating ?? null} size={13} emptyOutline />
       </span>
     </div>
@@ -241,6 +241,8 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
           const noms = r.nominations.filter((n) => n.movieId !== r.winner?.movieId && n.movieId !== TBD_ID)
           // 获奖位未定：名单显示提名，获奖行显示未定
           const pendingWinner = r.winnerTbd || r.winner?.movieId === TBD_ID
+          // 导演类奖项：行内人物即影片导演，不再重复显示影片导演信息
+          const directorAward = a.id === 'best-director' || a.id === 'favorite-director'
           // 颁奖词：文本输入 > 电影短评 > 奖项说明；都没有则不显示
           const citation = !pendingWinner && winner ? (r.citation?.trim() || winner.shortComment.trim() || a.description.trim()) : ''
           return (
@@ -257,7 +259,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
                     </span>
                   </div>
                 ) : winNom && winner ? (
-                  <ListLine movie={winner} person={resolvePerson(a, winNom, winner).name || undefined} color={GOLD} winner />
+                  <ListLine movie={winner} person={resolvePerson(a, winNom, winner).name || undefined} color={GOLD} winner directorAward={directorAward} />
                 ) : (
                   <div className="flex items-baseline">
                     <span className="mr-1.5 inline-block w-4 shrink-0 text-center">👑</span>
@@ -270,7 +272,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
                   const m = movieById(n.movieId)
                   if (!m) return null
                   const name = n.person?.name || resolvePerson(a, n, m).name || undefined
-                  return <ListLine key={n.movieId} movie={m} person={name} color={INK_GREEN} />
+                  return <ListLine key={n.movieId} movie={m} person={name} color={INK_GREEN} directorAward={directorAward} />
                 })}
               </div>
               {/* 右侧空白：颁奖词（右缘大致对齐报头用户头像的中线） */}
