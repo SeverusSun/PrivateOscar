@@ -3,6 +3,7 @@ import { RefreshCw, Clapperboard, Link2, UserRound, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
@@ -17,6 +18,7 @@ export default function SyncSection() {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<SyncProgress | null>(null)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [includeTv, setIncludeTv] = useState(() => localStorage.getItem('sync-include-tv') === '1')
 
   async function handleSync() {
     try {
@@ -26,9 +28,9 @@ export default function SyncSection() {
       const p = await fetchUser(uid)
       setProfile(p)
       setProgress({ phase: '账号验证成功', done: 0, total: 0 })
-      const list = await syncMovies(uid, setProgress)
+      const list = await syncMovies(uid, setProgress, { includeTv })
       setMovies(list)
-      toast.success(`同步完成，共 ${list.length} 条电影词条`)
+      toast.success(`同步完成，共 ${list.length} 条词条`)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '同步失败，请稍后重试')
     } finally {
@@ -71,6 +73,16 @@ export default function SyncSection() {
                 {busy ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {busy ? '同步中…' : profile ? '重新同步' : '开始同步'}
               </Button>
+              <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-sm text-muted-foreground">
+                <Checkbox
+                  checked={includeTv}
+                  onCheckedChange={(v) => {
+                    setIncludeTv(!!v)
+                    localStorage.setItem('sync-include-tv', v ? '1' : '0')
+                  }}
+                />
+                包含动画/剧集
+              </label>
             </div>
           </div>
 

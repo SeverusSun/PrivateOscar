@@ -36,9 +36,11 @@ function mapStatus(s: string): MovieStatus {
   return 'wish'
 }
 
-function mapInterest(it: any): MovieEntry | null {
+function mapInterest(it: any, includeTv: boolean): MovieEntry | null {
   const sub = it.subject
-  if (!sub || sub.type !== 'movie') return null
+  if (!sub) return null
+  // 默认只收电影词条；勾选「包含动画/剧集」后同时收录剧集（动画电影本就属于 movie 类型）
+  if (sub.type !== 'movie' && !(includeTv && sub.type === 'tv')) return null
   const pic = sub.pic?.large || sub.pic?.normal || sub.cover_url || sub.cover?.large || ''
   return {
     id: String(sub.id),
@@ -112,35 +114,40 @@ export interface SyncProgress {
   total: number
 }
 
-/** 同步某豆瓣账户的全部电影词条（想看 / 在看 / 看过） */
+/** 同步某豆瓣账户的全部电影词条（想看 / 在看 / 看过）；options.includeTv 时一并同步剧集 */
 export async function syncMovies(
   uid: string,
-  onProgress?: (p: SyncProgress) => void
+  onProgress?: (p: SyncProgress) => void,
+  options?: { includeTv?: boolean }
 ): Promise<MovieEntry[]> {
+  const includeTv = options?.includeTv ?? false
   onProgress?.({ phase: '正在获取书影音档案…', done: 0, total: 0 })
   const all: MovieEntry[] = []
   const seen = new Set<string>()
-  let start = 0
-  let total = Infinity
-  let pages = 0
-  // 豆瓣单页偶尔会少返回几条（49/47），不能以“短页”作为结束条件，
-  // 必须以接口返回的 total 为准，否则会在第 2~3 页提前停止（曾导致 491 条只同步到 143 条）。
-  while (start < total && pages < 300) {
-    pages++
-    const data = await fetchJson(`/user/${uid}/interests?type=movie&start=${start}&count=50&order_by=time`)
-    const items: any[] = data.interests || []
-    if (typeof data.total === 'number') total = data.total
-    if (!items.length) break
-    for (const it of items) {
-      const m = mapInterest(it)
-      if (m && !seen.has(m.id)) {
-        seen.add(m.id)
-        all.push(m)
+  const types = includeTv ? ['movie', 'tv'] : ['movie']
+  for (const type of types) {
+    let start = 0
+    let total = Infinity
+    let pages = 0
+    // 豆瓣单页偶尔会少返回几条（49/47），不能以“短页”作为结束条件，
+    // 必须以接口返回的 total 为准，否则会在第 2~3 页提前停止（曾导致 491 条只同步到 143 条）。
+    while (start < total && pages < 300) {
+      pages++
+      const data = await fetchJson(`/user/${uid}/interests?type=${type}&start=${start}&count=50&order_by=time`)
+      const items: any[] = data.interests || []
+      if (typeof data.total === 'number') total = data.total
+      if (!items.length) break
+      for (const it of items) {
+        const m = mapInterest(it, includeTv)
+        if (m && !seen.has(m.id)) {
+          seen.add(m.id)
+          all.push(m)
+        }
       }
+      start += items.length
+      onProgress?.({ phase: type === 'tv' ? '正在获取剧集档案…' : '正在获取书影音档案…', done: all.length, total })
+      await new Promise((r) => setTimeout(r, 350)) // 放缓请求节奏，避免触发豆瓣限流
     }
-    start += items.length
-    onProgress?.({ phase: '正在获取书影音档案…', done: all.length, total })
-    await new Promise((r) => setTimeout(r, 350)) // 放缓请求节奏，避免触发豆瓣限流
   }
 
   onProgress?.({ phase: '正在补全影片详情…', done: 0, total: all.length })
