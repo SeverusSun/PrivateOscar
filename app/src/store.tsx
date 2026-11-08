@@ -41,6 +41,8 @@ interface StoreCtx extends AppState {
   patchResult: (awardId: string, patch: Partial<AwardResult>) => void
   /** 清空全部奖项的提名与获奖（状态徽标恢复为待评选） */
   clearResults: () => void
+  /** 清空 Top 榜全部名次的入选（状态徽标恢复为待评选） */
+  clearTopPicks: () => void
   /** 清空全部数据：同步账户、影库、已评选、Top 榜、海报自定义设置，恢复默认 */
   resetAll: () => void
   updateMovie: (id: string, patch: Partial<MovieEntry>) => void
@@ -239,6 +241,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       getResult: (awardId) =>
         state.results[awardId] || { awardId, winner: null, nominations: [], person: null },
       clearResults: () => setState((s) => ({ ...s, results: {} })),
+      clearTopPicks: () => setState((s) => ({ ...s, topPicks: {} })),
       resetAll: () => {
         // 海报/榜单自定义标题、开关、视图模式等本地设置
         for (const key of [

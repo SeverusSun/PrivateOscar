@@ -837,7 +837,7 @@ function AwardCard({ award, collapsed }: { award: AwardDef; collapsed?: boolean 
 }
 
 export default function AwardsSection() {
-  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllClassic, setAllCustom, customAwards, year, setYear, yearMode, setYearMode, career, setCareer, movies, setAwardOrder, clearResults, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
+  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllClassic, setAllCustom, customAwards, year, setYear, yearMode, setYearMode, career, setCareer, movies, setAwardOrder, clearResults, clearTopPicks, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
   const [customName, setCustomName] = useState('')
   const [descAwardId, setDescAwardId] = useState('')
   const [dragId, setDragId] = useState<string | null>(null)
@@ -845,6 +845,10 @@ export default function AwardsSection() {
   const [confirmClear, setConfirmClear] = useState(false)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [confirmScope, setConfirmScope] = useState<string | null>(null)
+  // 上映年份下拉：有待确认年份时保持列表展开，并在选项下方内联确认提示
+  const [releaseOpen, setReleaseOpen] = useState(false)
+  const [pendingReleaseYear, setPendingReleaseYear] = useState<number | null>(null)
+  const pendingReleaseRef = useRef<number | null>(null)
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set())
   const [flashId, setFlashId] = useState<string | null>(null)
   const [topDragRank, setTopDragRank] = useState<number | null>(null)
@@ -877,13 +881,29 @@ export default function AwardsSection() {
   function requestScope(key: string, apply: () => void) {
     if (confirmScope === key) {
       clearResults()
+      clearTopPicks()
       apply()
       setConfirmScope(null)
       toast.success('已切换评选范围，并清空全部提名与获奖')
     } else {
+      // 取消可能残留的上映年份待确认态，避免切换范围后残留提示
+      pendingReleaseRef.current = null
+      setPendingReleaseYear(null)
       setConfirmScope(key)
       window.setTimeout(() => setConfirmScope((s) => (s === key ? null : s)), 4000)
     }
+  }
+
+  // 上映年份下拉：确认后统一执行清空与切换（下拉内联确认按钮与二次点击选项两条路径共用）
+  function applyReleaseYear(y: number) {
+    clearResults()
+    clearTopPicks()
+    setYear(y)
+    pendingReleaseRef.current = null
+    setPendingReleaseYear(null)
+    setConfirmScope(null)
+    setReleaseOpen(false)
+    toast.success('已切换评选范围，并清空全部提名与获奖')
   }
 
   const allOptionalOn = OPTIONAL_AWARDS.every((a) => enabledOptional.includes(a.id))
@@ -919,9 +939,8 @@ export default function AwardsSection() {
       const y = Number(yearMode === 'release' ? m.year : (m.markedAt || '').slice(0, 4))
       if (y > 1900) set.add(y)
     }
-    set.add(year)
     return Array.from(set).sort((a, b) => b - a)
-  }, [movies, year, yearMode])
+  }, [movies, yearMode])
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -1001,7 +1020,28 @@ export default function AwardsSection() {
               ))}
             </>
           ) : (
-            <Select value={String(year)} onValueChange={(v) => requestScope(`release-year-${v}`, () => setYear(Number(v)))}>
+            <Select
+              open={releaseOpen}
+              onOpenChange={(o) => {
+                // 有待确认年份时保持列表展开，避免用户忘记要选哪一年
+                if (!o && pendingReleaseRef.current != null) return
+                pendingReleaseRef.current = null
+                setPendingReleaseYear(null)
+                setReleaseOpen(o)
+              }}
+              value={String(year)}
+              onValueChange={(v) => {
+                const y = Number(v)
+                if (pendingReleaseRef.current === y) {
+                  applyReleaseYear(y)
+                } else {
+                  pendingReleaseRef.current = y
+                  setPendingReleaseYear(y)
+                  setConfirmScope(`release-year-${y}`)
+                  setReleaseOpen(true)
+                }
+              }}
+            >
               <SelectTrigger className="h-8 w-44">
                 <SelectValue />
               </SelectTrigger>
@@ -1011,6 +1051,19 @@ export default function AwardsSection() {
                     {y} 年上映
                   </SelectItem>
                 ))}
+                {pendingReleaseYear != null && (
+                  <div className="border-t px-1 py-1">
+                    <button
+                      className="w-full rounded px-2 py-1.5 text-left text-xs font-medium text-orange-600 transition hover:bg-orange-50"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        applyReleaseYear(pendingReleaseYear)
+                      }}
+                    >
+                      ⚠ 再次点击确认 {pendingReleaseYear} 年上映（将清空全部提名与获奖）
+                    </button>
+                  </div>
+                )}
               </SelectContent>
             </Select>
           )}
