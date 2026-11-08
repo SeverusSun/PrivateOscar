@@ -325,7 +325,6 @@ export default function PosterSection() {
   const [cols, setCols] = useState<2 | 4 | 6>(4)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
   const [preview, setPreview] = useState<'grand' | 'list'>('grand')
-  const [format, setFormat] = useState<'png' | 'jpg'>('png')
   const [customTitle, setCustomTitle] = useState(() => localStorage.getItem('poster-custom-title') ?? '')
   const [customListTitle, setCustomListTitle] = useState(() => localStorage.getItem('poster-custom-list-title') ?? '')
   const [customSubtitle, setCustomSubtitle] = useState(() => localStorage.getItem('poster-custom-subtitle') ?? '')
@@ -374,26 +373,21 @@ export default function PosterSection() {
     try {
       setExporting(nodeId)
       const pngUrl = await toPng(node, { pixelRatio: ratio, cacheBust: true })
-      let dataUrl = pngUrl
-      let name = filename
-      if (format === 'jpg') {
-        const img = new Image()
-        img.src = pngUrl
-        await img.decode()
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.fillStyle = '#ffffff'
-          ctx.fillRect(0, 0, canvas.width, canvas.height)
-          ctx.drawImage(img, 0, 0)
-          dataUrl = canvas.toDataURL('image/jpeg', 0.92)
-          name = filename.replace(/\.png$/, '.jpg')
-        }
-      }
+      // 统一输出 JPEG：白底合成后转码
+      const img = new Image()
+      img.src = pngUrl
+      await img.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('无法创建画布')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
       const a = document.createElement('a')
-      a.download = name
+      a.download = filename
       a.href = dataUrl
       a.click()
       toast.success('海报已导出')
@@ -464,18 +458,6 @@ export default function PosterSection() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-3">
-          <div className="flex items-center gap-1 rounded-md border p-0.5 text-sm">
-            {(['png', 'jpg'] as const).map((f) => (
-              <button
-                key={f}
-                title={f === 'png' ? 'PNG：无损，文件较大' : 'JPG：文件小，适合社交平台分享'}
-                className={`rounded px-2.5 py-1 uppercase transition ${format === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-                onClick={() => setFormat(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <Switch
               checked={showOscar}
@@ -623,12 +605,12 @@ export default function PosterSection() {
         )}
         <div className="flex flex-wrap gap-2 border-t pt-3">
           {preview === 'grand' ? (
-            <Button onClick={() => exportPoster('grand-poster', career ? '光影生涯奥斯卡海报.png' : `${year}私人奥斯卡海报.png`)} disabled={!!exporting}>
+            <Button onClick={() => exportPoster('grand-poster', career ? '光影生涯奥斯卡海报.jpg' : `${year}私人奥斯卡海报.jpg`)} disabled={!!exporting}>
               {exporting === 'grand-poster' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               导出海报
             </Button>
           ) : (
-            <Button onClick={() => exportPoster('list-poster', career ? '光影生涯奥斯卡完整名单.png' : `${year}私人奥斯卡完整名单.png`)} disabled={!!exporting}>
+            <Button onClick={() => exportPoster('list-poster', career ? '光影生涯奥斯卡完整名单.jpg' : `${year}私人奥斯卡完整名单.jpg`)} disabled={!!exporting}>
               {exporting === 'list-poster' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               导出完整名单
             </Button>

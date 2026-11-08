@@ -176,7 +176,6 @@ export default function TopSection() {
   const { profile, year, career, topN, topCategory } = useStore()
   const [exporting, setExporting] = useState(false)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
-  const [format, setFormat] = useState<'png' | 'jpg'>('png')
   const [customTitle, setCustomTitle] = useState(() => localStorage.getItem('top-custom-title') ?? '')
   const [customSubtitle, setCustomSubtitle] = useState(() => localStorage.getItem('top-custom-subtitle') ?? '')
   const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
@@ -213,26 +212,21 @@ export default function TopSection() {
     try {
       setExporting(true)
       const pngUrl = await toPng(node, { pixelRatio: ratio, cacheBust: true })
-      let dataUrl = pngUrl
-      let name = `${defaultTitle}.png`
-      if (format === 'jpg') {
-        const img = new Image()
-        img.src = pngUrl
-        await img.decode()
-        const canvas = document.createElement('canvas')
-        canvas.width = img.naturalWidth
-        canvas.height = img.naturalHeight
-        const ctx = canvas.getContext('2d')
-        if (ctx) {
-          ctx.fillStyle = '#ffffff'
-          ctx.fillRect(0, 0, canvas.width, canvas.height)
-          ctx.drawImage(img, 0, 0)
-          dataUrl = canvas.toDataURL('image/jpeg', 0.92)
-          name = `${defaultTitle}.jpg`
-        }
-      }
+      // 统一输出 JPEG：白底合成后转码
+      const img = new Image()
+      img.src = pngUrl
+      await img.decode()
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('无法创建画布')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
       const a = document.createElement('a')
-      a.download = name
+      a.download = `${defaultTitle}.jpg`
       a.href = dataUrl
       a.click()
       toast.success('榜单已导出')
@@ -255,18 +249,6 @@ export default function TopSection() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-3">
-          <div className="flex items-center gap-1 rounded-md border p-0.5 text-sm">
-            {(['png', 'jpg'] as const).map((f) => (
-              <button
-                key={f}
-                title={f === 'png' ? 'PNG：无损，文件较大' : 'JPG：文件小，适合社交平台分享'}
-                className={`rounded px-2.5 py-1 uppercase transition ${format === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-                onClick={() => setFormat(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <Switch
               checked={showOscar}
