@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -93,11 +93,11 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
       className="bg-[#f6f6f0] px-10 py-8"
       style={{ width: posterW, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
-      {gt.color || gi.color ? (
+      {/* 自定义文字颜色/字体（按组覆盖，留空则用默认配色与字体） */}
+      {gt.color || gt.font || gi.color || gi.font ? (
         <style>{[
-          gt.color ? `#grand-poster .pt-title, #grand-poster .pt-title * { color: ${gt.color} !important; }` : '',
-          gi.color ? `#grand-poster .pt-info, #grand-poster .pt-info * { color: ${gi.color} !important; }` : '',
+          groupStyleRules('#grand-poster', 'pt-title', gt),
+          groupStyleRules('#grand-poster', 'pt-info', gi),
         ].filter(Boolean).join('\n')}</style>
       ) : null}
       {/* 报头：小金人（可关） + 标题 + 可选豆瓣头像；关闭时用等宽占位保持标题居中 */}
@@ -227,12 +227,12 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
       className="bg-[#f6f6f0] px-12 py-8"
       style={{ width: 1000, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
-      {gt.color || gi.color || gc.color ? (
+      {/* 自定义文字颜色/字体（按组覆盖，留空则用默认配色与字体） */}
+      {gt.color || gt.font || gi.color || gi.font || gc.color || gc.font ? (
         <style>{[
-          gt.color ? `#list-poster .pt-title, #list-poster .pt-title * { color: ${gt.color} !important; }` : '',
-          gi.color ? `#list-poster .pt-info, #list-poster .pt-info * { color: ${gi.color} !important; }` : '',
-          gc.color ? `#list-poster .pt-citation, #list-poster .pt-citation * { color: ${gc.color} !important; }` : '',
+          groupStyleRules('#list-poster', 'pt-title', gt),
+          groupStyleRules('#list-poster', 'pt-info', gi),
+          groupStyleRules('#list-poster', 'pt-citation', gc),
         ].filter(Boolean).join('\n')}</style>
       ) : null}
       <div className="flex items-center justify-between">

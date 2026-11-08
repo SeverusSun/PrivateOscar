@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -58,12 +58,12 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
       className="bg-[#f6f6f0] px-12 py-8"
       style={{ width: 1080, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
-      {gt.color || gi.color || gc.color ? (
+      {/* 自定义文字颜色/字体（按组覆盖，留空则用默认配色与字体） */}
+      {gt.color || gt.font || gi.color || gi.font || gc.color || gc.font ? (
         <style>{[
-          gt.color ? `#top-poster .pt-title, #top-poster .pt-title * { color: ${gt.color} !important; }` : '',
-          gi.color ? `#top-poster .pt-info, #top-poster .pt-info * { color: ${gi.color} !important; }` : '',
-          gc.color ? `#top-poster .pt-citation, #top-poster .pt-citation * { color: ${gc.color} !important; }` : '',
+          groupStyleRules('#top-poster', 'pt-title', gt),
+          groupStyleRules('#top-poster', 'pt-info', gi),
+          groupStyleRules('#top-poster', 'pt-citation', gc),
         ].filter(Boolean).join('\n')}</style>
       ) : null}
       {/* 报头：小金人（可关） + 标题/副标题 + 豆瓣头像；关闭时用等宽占位保持标题居中 */}
