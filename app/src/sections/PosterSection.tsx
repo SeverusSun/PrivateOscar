@@ -72,7 +72,7 @@ function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { 
 }
 
 /** 海报一：私人奥斯卡海报（奖项名在上、图片居中、片名/导演/评分在下；支持 2 / 4 / 6 列切换；无颁奖词） */
-function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; cols: 2 | 4 | 6; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
+function GrandPoster({ awards, cols, showAvatar, showOscar, nameOnly, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; cols: 2 | 4 | 6; showAvatar: boolean; showOscar: boolean; nameOnly?: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
   const { profile, movieById, year, yearMode, career, getResult } = useStore()
   // 单元格宽度不变：2 列 470、4/6 列 235；6 列时整幅宽度约为 4 列的 1.5 倍
   const imgW = cols === 2 ? 470 : 235
@@ -183,14 +183,14 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
                 )}
               </div>
               <div className="pt-info w-full truncate font-bold text-[#111827]" style={{ fontSize: fsi(big ? 32 : 24) }}>{person.name || movie?.title || '—'}</div>
-              {person.name && movie ? (
+              {!nameOnly && person.name && movie ? (
                 <div className="pt-info mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fsi(big ? 20 : 16) }}>《{movie.title}》</div>
-              ) : movie && (movie.directors.length > 0 || movie.year) ? (
+              ) : !nameOnly && movie && (movie.directors.length > 0 || movie.year) ? (
                 <div className="pt-info mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fsi(big ? 20 : 16) }}>
                   {movie.directors.length > 0 ? movie.directors.map((d) => d.name).join(' / ') : movie.year}
                 </div>
               ) : null}
-              {movie && (
+              {!nameOnly && movie && (
                 <div className="pt-info mt-auto flex w-full items-center justify-center gap-2 pt-2 text-[#4b5563]" style={{ fontSize: fsi(big ? 21 : 17) }}>
                   豆瓣 <b style={{ color: RATING_ORANGE }}>{movie.doubanRating?.toFixed(1) ?? '—'}</b>
                   <StarRow value={movie.userRating} size={big ? fsi(22) : fsi(18)} emptyOutline />
@@ -336,6 +336,7 @@ export default function PosterSection() {
   useCreditsLoader(nominatedIds)
   const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
   const [showOscar, setShowOscar] = useState(() => localStorage.getItem('poster-show-oscar') !== '0')
+  const [nameOnly, setNameOnly] = useState(() => localStorage.getItem('poster-name-only') === '1')
   // 海报/名单三组文字样式（标题/副标题、奖项名/电影信息、颁奖词），各自保存在 localStorage
   const [grandGroups, setGrandGroups] = useState<PosterTextGroups>(() => loadTextGroups('poster-grand-text'))
   const [listGroups, setListGroups] = useState<PosterTextGroups>(() => loadTextGroups('poster-list-text'))
@@ -486,6 +487,18 @@ export default function PosterSection() {
             />
             报头显示豆瓣头像
           </label>
+          {preview === 'grand' && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <Switch
+              checked={nameOnly}
+              onCheckedChange={(on) => {
+                setNameOnly(on)
+                localStorage.setItem('poster-name-only', on ? '1' : '0')
+              }}
+            />
+            仅显示电影名
+          </label>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <span className="text-sm font-bold">导出清晰度</span>
@@ -630,7 +643,7 @@ export default function PosterSection() {
       <div ref={previewRef} className="space-y-8 overflow-x-auto rounded-md border bg-[#e5e5dd] p-6">
         {preview === 'grand' ? (
           <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
-            <GrandPoster awards={activeAwards} cols={cols} showAvatar={showAvatar} showOscar={showOscar} customTitle={customTitle} customSubtitle={customSubtitle} textGroups={grandGroups} />
+            <GrandPoster awards={activeAwards} cols={cols} showAvatar={showAvatar} showOscar={showOscar} nameOnly={nameOnly} customTitle={customTitle} customSubtitle={customSubtitle} textGroups={grandGroups} />
           </div>
         ) : (
           <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
