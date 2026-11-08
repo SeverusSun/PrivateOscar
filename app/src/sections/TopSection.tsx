@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextStyle, saveTextStyle, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -35,10 +35,15 @@ function StarRow({ value, size = 14 }: { value: number | null; size?: number }) 
 }
 
 /** 榜单海报：报头 + Top 1 ~ N 排名行（海报宽度 1080，高度随名次数量变化） */
-function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, textScale = 1, textColor = '' }: { showAvatar: boolean; showOscar: boolean; medal: boolean; customTitle?: string; customSubtitle?: string; textScale?: number; textColor?: string }) {
+function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { showAvatar: boolean; showOscar: boolean; medal: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
   const { profile, year, career, topN, topCategory, topPicks, movieById } = useStore()
-  // 文字整体缩放
-  const fs = (px: number) => Math.round(px * textScale)
+  // 三组文字样式：标题/副标题、奖项名/电影信息、颁奖词
+  const gt = textGroups.title
+  const gi = textGroups.info
+  const gc = textGroups.citation
+  const fst = (px: number) => Math.round(px * gt.scale)
+  const fsi = (px: number) => Math.round(px * gi.scale)
+  const fsc = (px: number) => Math.round(px * gc.scale)
   const isPersonCategory = topCategory === '导演' || topCategory === '男演' || topCategory === '女演'
   const heading =
     customTitle?.trim() ||
@@ -53,8 +58,14 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
       className="bg-[#f6f6f0] px-12 py-8"
       style={{ width: 1080, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色：覆盖榜单内所有文字，留空则用默认配色 */}
-      {textColor ? <style>{`#top-poster, #top-poster * { color: ${textColor} !important; }`}</style> : null}
+      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
+      {gt.color || gi.color || gc.color ? (
+        <style>{[
+          gt.color ? `#top-poster .pt-title, #top-poster .pt-title * { color: ${gt.color} !important; }` : '',
+          gi.color ? `#top-poster .pt-info, #top-poster .pt-info * { color: ${gi.color} !important; }` : '',
+          gc.color ? `#top-poster .pt-citation, #top-poster .pt-citation * { color: ${gc.color} !important; }` : '',
+        ].filter(Boolean).join('\n')}</style>
+      ) : null}
       {/* 报头：小金人（可关） + 标题/副标题 + 豆瓣头像；关闭时用等宽占位保持标题居中 */}
       <div className="flex items-center justify-between">
         {showOscar ? (
@@ -62,9 +73,9 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
         ) : (
           <div style={{ width: 22 }} />
         )}
-        <div className="flex-1 text-center">
-          <div className="tracking-[0.35em] text-[#6b7280]" style={{ fontSize: fs(16) }}>{subtitle}</div>
-          <div className="mt-1 font-bold tracking-wide text-[#111827]" style={{ fontFamily: TITLE_FONT, fontSize: fs(46) }}>
+        <div className="pt-title flex-1 text-center">
+          <div className="tracking-[0.35em] text-[#6b7280]" style={{ fontSize: fst(16) }}>{subtitle}</div>
+          <div className="mt-1 font-bold tracking-wide text-[#111827]" style={{ fontFamily: TITLE_FONT, fontSize: fst(46) }}>
             {heading}
           </div>
         </div>
@@ -119,34 +130,34 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
                   ) : null}
                 </div>
               ) : (
-                <div className="flex items-center justify-center rounded-sm border border-dashed border-[#c9c9bc] text-[#9ca3af]" style={{ width: 132, height: 198, fontSize: fs(14) }}>
+                <div className="pt-info flex items-center justify-center rounded-sm border border-dashed border-[#c9c9bc] text-[#9ca3af]" style={{ width: 132, height: 198, fontSize: fsi(14) }}>
                   待定
                 </div>
               )}
               <div className="min-w-0 max-w-[440px] text-center">
-                <div className="font-bold leading-tight" style={{ color: rankColor, fontFamily: TITLE_FONT, fontSize: fs(45) }}>
+                <div className="pt-info font-bold leading-tight" style={{ color: rankColor, fontFamily: TITLE_FONT, fontSize: fsi(45) }}>
                   TOP {rank}
                 </div>
                 {movie ? (
                   <>
-                    <div className="mt-1 truncate font-bold text-[#111827]" style={{ fontSize: fs(22) }}>
+                    <div className="pt-info mt-1 truncate font-bold text-[#111827]" style={{ fontSize: fsi(22) }}>
                       {resolved?.name ? `${resolved.name} ` : ''}
                       《{movie.title}》
                     </div>
-                    <div className="mt-0.5 truncate text-[#4b5563]" style={{ fontSize: fs(15) }}>
+                    <div className="pt-info mt-0.5 truncate text-[#4b5563]" style={{ fontSize: fsi(15) }}>
                       {isPersonCategory ? movie.year : movie.directors.map((d) => d.name).join(' / ')}
                     </div>
-                    <div className="mt-1 flex items-center justify-center gap-2 text-[#4b5563]" style={{ fontSize: fs(15) }}>
+                    <div className="pt-info mt-1 flex items-center justify-center gap-2 text-[#4b5563]" style={{ fontSize: fsi(15) }}>
                       豆瓣 <b style={{ color: RATING_ORANGE }}>{movie.doubanRating?.toFixed(1) ?? '—'}</b>
-                      <StarRow value={movie.userRating ?? null} size={fs(16)} />
+                      <StarRow value={movie.userRating ?? null} size={fsi(16)} />
                     </div>
                   </>
                 ) : (
-                  <div className="text-[#9ca3af]" style={{ fontSize: fs(18) }}>—</div>
+                  <div className="pt-info text-[#9ca3af]" style={{ fontSize: fsi(18) }}>—</div>
                 )}
               </div>
               {/* 右侧：颁奖词（固定占位，保证各行对齐） */}
-              <div className="w-64 shrink-0 pt-0.5 text-center italic leading-relaxed text-[#6b7280]" style={{ fontSize: fs(16) }}>
+              <div className="pt-citation w-64 shrink-0 pt-0.5 text-center italic leading-relaxed text-[#6b7280]" style={{ fontSize: fsc(16) }}>
                 {citation ? `“${citation}”` : ''}
               </div>
             </div>
@@ -154,7 +165,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
         })}
       </div>
 
-      <div className="mt-8 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fs(12) }}>
+      <div className="pt-title mt-8 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fst(12) }}>
         — {new Date().toISOString().slice(0, 10)} · 由「私人奥斯卡」生成 —
       </div>
     </div>
@@ -171,8 +182,13 @@ export default function TopSection() {
   const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
   const [showOscar, setShowOscar] = useState(() => localStorage.getItem('poster-show-oscar') !== '0')
   const [medal, setMedal] = useState(() => localStorage.getItem('top-show-medal') !== '0')
-  // 榜单文字样式（大小 + 颜色），保存在 localStorage
-  const [textStyle, setTextStyle] = useState<PosterTextStyle>(() => loadTextStyle('top-text'))
+  // 榜单文字样式（标题/副标题、奖项名/电影信息、颁奖词三组），保存在 localStorage
+  const [textGroups, setTextGroups] = useState<PosterTextGroups>(() => loadTextGroups('top-text'))
+  function updateGroups(key: keyof PosterTextGroups, v: PosterTextStyle) {
+    const next = { ...textGroups, [key]: v }
+    setTextGroups(next)
+    saveTextGroups('top-text', next)
+  }
   const previewRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(1000)
 
@@ -299,13 +315,13 @@ export default function TopSection() {
           <span className="text-xs text-muted-foreground">榜单宽度 {1080 * ratio} px（高度随名次数量变化）</span>
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-          <TextStyleControls
-            value={textStyle}
-            onChange={(v) => {
-              setTextStyle(v)
-              saveTextStyle('top-text', v)
-            }}
-          />
+          <TextStyleControls label="标题/副标题" value={textGroups.title} onChange={(v) => updateGroups('title', v)} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <TextStyleControls label="奖项名/电影信息" value={textGroups.info} onChange={(v) => updateGroups('info', v)} />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <TextStyleControls label="颁奖词" value={textGroups.citation} onChange={(v) => updateGroups('citation', v)} />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <span className="w-16 shrink-0 text-sm font-bold">榜单标题</span>
@@ -362,7 +378,7 @@ export default function TopSection() {
       {/* 预览：自适应缩放展示 1080 宽的榜单 */}
       <div ref={previewRef} className="space-y-8 overflow-x-auto rounded-md border bg-[#e5e5dd] p-6">
         <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
-          <TopPoster showAvatar={showAvatar} showOscar={showOscar} medal={medal} customTitle={customTitle} customSubtitle={customSubtitle} textScale={textStyle.scale} textColor={textStyle.color} />
+          <TopPoster showAvatar={showAvatar} showOscar={showOscar} medal={medal} customTitle={customTitle} customSubtitle={customSubtitle} textGroups={textGroups} />
         </div>
       </div>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">预览按 {Math.round(scale * 100)}% 自适应缩放显示。当前导出 {ratio}x 清晰度：榜单宽约 {1080 * ratio} px，高度随名次数量变化。</p>

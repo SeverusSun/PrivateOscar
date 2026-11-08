@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextStyle, saveTextStyle, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -56,7 +56,7 @@ function StarRow({ value, size = 14, emptyOutline = false }: { value: number | n
 /** 名单行：👑/空 独立成列，片名 / 导演 / 豆瓣评分 / 用户星级；directorAward 时不重复显示影片导演 */
 function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { movie: MovieEntry; person?: string; color: string; winner?: boolean; directorAward?: boolean; scale?: number }) {
   return (
-    <div className="flex items-baseline" style={{ color, fontSize: Math.round(14 * scale) }}>
+    <div className="pt-info flex items-baseline" style={{ color, fontSize: Math.round(14 * scale) }}>
       <span className="mr-1.5 inline-block w-4 shrink-0 text-center">{winner ? '👑' : ''}</span>
       <span className="min-w-0 truncate">
         <span className={winner ? 'font-bold' : ''}>
@@ -70,16 +70,19 @@ function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { 
   )
 }
 
-/** 海报一：私人奥斯卡海报（奖项名在上、图片居中、片名/导演/评分在下；支持 2 / 4 / 6 列切换） */
-function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customSubtitle, textScale = 1, textColor = '' }: { awards: AwardDef[]; cols: 2 | 4 | 6; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textScale?: number; textColor?: string }) {
+/** 海报一：私人奥斯卡海报（奖项名在上、图片居中、片名/导演/评分在下；支持 2 / 4 / 6 列切换；无颁奖词） */
+function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; cols: 2 | 4 | 6; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
   const { profile, movieById, year, career, getResult } = useStore()
   // 单元格宽度不变：2 列 470、4/6 列 235；6 列时整幅宽度约为 4 列的 1.5 倍
   const imgW = cols === 2 ? 470 : 235
   const posterW = cols === 6 ? 1620 : 1080
   // 6 列时同步放大报头元素，保持整幅比例协调
   const head = cols === 6 ? { oscar: 150, title: 52, avatar: 112, eng: 18 } : { oscar: 130, title: 46, avatar: 104, eng: 16 }
-  // 文字整体缩放
-  const fs = (px: number) => Math.round(px * textScale)
+  // 三组文字样式：标题/副标题、奖项名/电影信息
+  const gt = textGroups.title
+  const gi = textGroups.info
+  const fst = (px: number) => Math.round(px * gt.scale)
+  const fsi = (px: number) => Math.round(px * gi.scale)
   const heading =
     customTitle?.trim() ||
     (career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year} 私人奥斯卡`)
@@ -90,8 +93,13 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
       className="bg-[#f6f6f0] px-10 py-8"
       style={{ width: posterW, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色：覆盖海报内所有文字（含奖项烫金、评分橙），留空则用默认配色 */}
-      {textColor ? <style>{`#grand-poster, #grand-poster * { color: ${textColor} !important; }`}</style> : null}
+      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
+      {gt.color || gi.color ? (
+        <style>{[
+          gt.color ? `#grand-poster .pt-title, #grand-poster .pt-title * { color: ${gt.color} !important; }` : '',
+          gi.color ? `#grand-poster .pt-info, #grand-poster .pt-info * { color: ${gi.color} !important; }` : '',
+        ].filter(Boolean).join('\n')}</style>
+      ) : null}
       {/* 报头：小金人（可关） + 标题 + 可选豆瓣头像；关闭时用等宽占位保持标题居中 */}
       <div className="flex items-center justify-between">
         {showOscar ? (
@@ -99,9 +107,9 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
         ) : (
           <div style={{ width: head.oscar * 0.6 }} />
         )}
-        <div className="text-center">
-          <div className="tracking-[0.5em] text-[#6b7280]" style={{ fontSize: fs(head.eng) }}>{subtitle}</div>
-          <div className="mt-2 font-bold tracking-wider text-[#0f3d21]" style={{ fontSize: fs(head.title), fontFamily: TITLE_FONT }}>
+        <div className="pt-title text-center">
+          <div className="tracking-[0.5em] text-[#6b7280]" style={{ fontSize: fst(head.eng) }}>{subtitle}</div>
+          <div className="mt-2 font-bold tracking-wider text-[#0f3d21]" style={{ fontSize: fst(head.title), fontFamily: TITLE_FONT }}>
             {heading}
           </div>
         </div>
@@ -133,7 +141,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           if (pending) {
             return (
               <div key={a.id} className="flex flex-col items-center rounded-md border border-dashed border-[#c9a227] bg-white/70 p-3 text-center">
-                <div className="font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fs(26) }}>
+                <div className="pt-info font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fsi(26) }}>
                   {a.name}
                 </div>
                 <div
@@ -142,10 +150,10 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
                 >
                   <img src={oscarSilhouetteUrl} alt="未定奖杯剪影" crossOrigin="anonymous" style={{ height: big ? '86%' : '80%', opacity: 0.75 }} />
                 </div>
-                <div className="w-full truncate font-bold text-[#9ca3af]" style={{ fontFamily: TITLE_FONT, fontSize: fs(big ? 32 : 24) }}>
+                <div className="pt-info w-full truncate font-bold text-[#9ca3af]" style={{ fontFamily: TITLE_FONT, fontSize: fsi(big ? 32 : 24) }}>
                   未定
                 </div>
-                <div className="mt-0.5 text-[#9ca3af]" style={{ fontSize: fs(big ? 20 : 16) }}>感觉选不出合适的呢</div>
+                <div className="pt-info mt-0.5 text-[#9ca3af]" style={{ fontSize: fsi(big ? 20 : 16) }}>感觉选不出合适的呢</div>
               </div>
             )
           }
@@ -155,7 +163,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
           const person = winNom ? resolvePerson(a, winNom, movie) : { name: '', image: '', manual: false }
           return (
             <div key={a.id} className="flex flex-col items-center rounded-md border border-[#d8d8cc] bg-white/70 p-3 text-center">
-              <div className="font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fs(26) }}>
+              <div className="pt-info font-bold tracking-widest" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fsi(26) }}>
                 {a.name}
               </div>
               <div className={`${big ? 'my-3' : 'my-2'} flex items-center justify-center overflow-hidden rounded-sm bg-[#ecece2] shadow-sm`} style={{ width: imgW, height: Math.round((imgW * 3) / 2) }}>
@@ -170,21 +178,21 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
                 ) : movie ? (
                   <MoviePosterThumb movie={movie} w={imgW} />
                 ) : (
-                  <span className="text-[#9ca3af]" style={{ fontSize: fs(11) }}>未评出</span>
+                  <span className="pt-info text-[#9ca3af]" style={{ fontSize: fsi(11) }}>未评出</span>
                 )}
               </div>
-              <div className="w-full truncate font-bold text-[#111827]" style={{ fontSize: fs(big ? 32 : 24) }}>{person.name || movie?.title || '—'}</div>
+              <div className="pt-info w-full truncate font-bold text-[#111827]" style={{ fontSize: fsi(big ? 32 : 24) }}>{person.name || movie?.title || '—'}</div>
               {person.name && movie ? (
-                <div className="mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fs(big ? 20 : 16) }}>《{movie.title}》</div>
+                <div className="pt-info mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fsi(big ? 20 : 16) }}>《{movie.title}》</div>
               ) : movie && (movie.directors.length > 0 || movie.year) ? (
-                <div className="mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fs(big ? 20 : 16) }}>
+                <div className="pt-info mt-0.5 w-full truncate text-[#4b5563]" style={{ fontSize: fsi(big ? 20 : 16) }}>
                   {movie.directors.length > 0 ? movie.directors.map((d) => d.name).join(' / ') : movie.year}
                 </div>
               ) : null}
               {movie && (
-                <div className="mt-auto flex w-full items-center justify-center gap-2 pt-2 text-[#4b5563]" style={{ fontSize: fs(big ? 21 : 17) }}>
+                <div className="pt-info mt-auto flex w-full items-center justify-center gap-2 pt-2 text-[#4b5563]" style={{ fontSize: fsi(big ? 21 : 17) }}>
                   豆瓣 <b style={{ color: RATING_ORANGE }}>{movie.doubanRating?.toFixed(1) ?? '—'}</b>
-                  <StarRow value={movie.userRating} size={big ? fs(22) : fs(18)} emptyOutline />
+                  <StarRow value={movie.userRating} size={big ? fsi(22) : fsi(18)} emptyOutline />
                 </div>
               )}
             </div>
@@ -192,7 +200,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
         })}
       </div>
 
-      <div className="mt-6 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fs(12) }}>
+      <div className="pt-title mt-6 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fst(12) }}>
         — {new Date().toISOString().slice(0, 10)} · 由「私人奥斯卡」生成 —
       </div>
     </div>
@@ -200,10 +208,15 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
 }
 
 /** 海报二：详细提名列表海报（仅文字；获奖烫金，提名墨绿） */
-function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle, textScale = 1, textColor = '' }: { awards: AwardDef[]; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textScale?: number; textColor?: string }) {
+function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
   const { profile, movieById, year, career, getResult } = useStore()
-  // 文字整体缩放
-  const fs = (px: number) => Math.round(px * textScale)
+  // 三组文字样式：标题/副标题、奖项名/电影信息、颁奖词
+  const gt = textGroups.title
+  const gi = textGroups.info
+  const gc = textGroups.citation
+  const fst = (px: number) => Math.round(px * gt.scale)
+  const fsi = (px: number) => Math.round(px * gi.scale)
+  const fsc = (px: number) => Math.round(px * gc.scale)
   const heading =
     customTitle?.trim() ||
     `${career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year} 私人奥斯卡`}完整名单`
@@ -214,17 +227,23 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
       className="bg-[#f6f6f0] px-12 py-8"
       style={{ width: 1000, fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
     >
-      {/* 自定义文字颜色：覆盖名单内所有文字（含获奖烫金、提名墨绿），留空则用默认配色 */}
-      {textColor ? <style>{`#list-poster, #list-poster * { color: ${textColor} !important; }`}</style> : null}
+      {/* 自定义文字颜色（按组覆盖，留空则用默认配色） */}
+      {gt.color || gi.color || gc.color ? (
+        <style>{[
+          gt.color ? `#list-poster .pt-title, #list-poster .pt-title * { color: ${gt.color} !important; }` : '',
+          gi.color ? `#list-poster .pt-info, #list-poster .pt-info * { color: ${gi.color} !important; }` : '',
+          gc.color ? `#list-poster .pt-citation, #list-poster .pt-citation * { color: ${gc.color} !important; }` : '',
+        ].filter(Boolean).join('\n')}</style>
+      ) : null}
       <div className="flex items-center justify-between">
         {showOscar ? (
           <img src={oscarUrl} alt="奥斯卡小金人" crossOrigin="anonymous" style={{ height: 92 }} />
         ) : (
           <div style={{ width: 55 }} />
         )}
-        <div className="text-center">
-          <div className="tracking-[0.5em] text-[#6b7280]" style={{ fontSize: fs(14) }}>{subtitle}</div>
-          <div className="mt-2 font-bold tracking-wider text-[#0f3d21]" style={{ fontSize: fs(38), fontFamily: TITLE_FONT }}>
+        <div className="pt-title text-center">
+          <div className="tracking-[0.5em] text-[#6b7280]" style={{ fontSize: fst(14) }}>{subtitle}</div>
+          <div className="mt-2 font-bold tracking-wider text-[#0f3d21]" style={{ fontSize: fst(38), fontFamily: TITLE_FONT }}>
             {heading}
           </div>
         </div>
@@ -256,23 +275,23 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
           const citation = !pendingWinner && winner ? (r.citation?.trim() || winner.shortComment.trim() || a.description.trim()) : ''
           return (
             <div key={a.id} className="flex items-start gap-4 border-b border-dashed border-[#d8d8cc] pb-3">
-              <div className="w-40 shrink-0 pt-0.5 text-right font-bold" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fs(20) }}>
+              <div className="pt-info w-40 shrink-0 pt-0.5 text-right font-bold" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fsi(20) }}>
                 {a.name}
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 {pendingWinner ? (
                   <div className="flex items-baseline">
                     <span className="mr-1.5 inline-block w-4 shrink-0 text-center">👑</span>
-                    <span className="font-bold" style={{ color: GOLD, fontSize: fs(14) }}>
+                    <span className="pt-info font-bold" style={{ color: GOLD, fontSize: fsi(14) }}>
                       未定
                     </span>
                   </div>
                 ) : winNom && winner ? (
-                  <ListLine movie={winner} person={resolvePerson(a, winNom, winner).name || undefined} color={GOLD} winner directorAward={directorAward} scale={textScale} />
+                  <ListLine movie={winner} person={resolvePerson(a, winNom, winner).name || undefined} color={GOLD} winner directorAward={directorAward} scale={gi.scale} />
                 ) : (
                   <div className="flex items-baseline">
                     <span className="mr-1.5 inline-block w-4 shrink-0 text-center">👑</span>
-                    <span className="font-bold" style={{ color: GOLD, fontSize: fs(14) }}>
+                    <span className="pt-info font-bold" style={{ color: GOLD, fontSize: fsi(14) }}>
                       —
                     </span>
                   </div>
@@ -281,11 +300,11 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
                   const m = movieById(n.movieId)
                   if (!m) return null
                   const name = n.person?.name || resolvePerson(a, n, m).name || undefined
-                  return <ListLine key={n.movieId} movie={m} person={name} color={INK_GREEN} directorAward={directorAward} scale={textScale} />
+                  return <ListLine key={n.movieId} movie={m} person={name} color={INK_GREEN} directorAward={directorAward} scale={gi.scale} />
                 })}
               </div>
               {/* 右侧空白：颁奖词（右缘大致对齐报头用户头像的中线） */}
-              <div className="mr-10 w-72 shrink-0 pt-0.5 text-right italic leading-relaxed text-[#6b7280]" style={{ fontSize: fs(12) }}>
+              <div className="pt-citation mr-10 w-72 shrink-0 pt-0.5 text-right italic leading-relaxed text-[#6b7280]" style={{ fontSize: fsc(12) }}>
                 {citation ? `“${citation}”` : ''}
               </div>
             </div>
@@ -293,7 +312,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
         })}
       </div>
 
-      <div className="mt-8 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fs(12) }}>
+      <div className="pt-title mt-8 text-center tracking-widest text-[#9ca3af]" style={{ fontSize: fst(12) }}>
         — {new Date().toISOString().slice(0, 10)} · 由「私人奥斯卡」生成 —
       </div>
     </div>
@@ -317,9 +336,20 @@ export default function PosterSection() {
   useCreditsLoader(nominatedIds)
   const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
   const [showOscar, setShowOscar] = useState(() => localStorage.getItem('poster-show-oscar') !== '0')
-  // 海报/名单文字样式（大小 + 颜色），各自保存在 localStorage
-  const [grandStyle, setGrandStyle] = useState<PosterTextStyle>(() => loadTextStyle('poster-grand-text'))
-  const [listStyle, setListStyle] = useState<PosterTextStyle>(() => loadTextStyle('poster-list-text'))
+  // 海报/名单三组文字样式（标题/副标题、奖项名/电影信息、颁奖词），各自保存在 localStorage
+  const [grandGroups, setGrandGroups] = useState<PosterTextGroups>(() => loadTextGroups('poster-grand-text'))
+  const [listGroups, setListGroups] = useState<PosterTextGroups>(() => loadTextGroups('poster-list-text'))
+  function updateGroups(key: keyof PosterTextGroups, v: PosterTextStyle) {
+    if (preview === 'grand') {
+      const next = { ...grandGroups, [key]: v }
+      setGrandGroups(next)
+      saveTextGroups('poster-grand-text', next)
+    } else {
+      const next = { ...listGroups, [key]: v }
+      setListGroups(next)
+      saveTextGroups('poster-list-text', next)
+    }
+  }
   const previewRef = useRef<HTMLDivElement>(null)
   const [containerW, setContainerW] = useState(1000)
 
@@ -487,18 +517,28 @@ export default function PosterSection() {
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <TextStyleControls
-            value={preview === 'grand' ? grandStyle : listStyle}
-            onChange={(v) => {
-              if (preview === 'grand') {
-                setGrandStyle(v)
-                saveTextStyle('poster-grand-text', v)
-              } else {
-                setListStyle(v)
-                saveTextStyle('poster-list-text', v)
-              }
-            }}
+            label="标题/副标题"
+            value={(preview === 'grand' ? grandGroups : listGroups).title}
+            onChange={(v) => updateGroups('title', v)}
           />
         </div>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <TextStyleControls
+            label="奖项名/电影信息"
+            value={(preview === 'grand' ? grandGroups : listGroups).info}
+            onChange={(v) => updateGroups('info', v)}
+          />
+        </div>
+        {/* 主海报没有颁奖词，仅完整名单显示颁奖词控制行 */}
+        {preview === 'list' && (
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          <TextStyleControls
+            label="颁奖词"
+            value={listGroups.citation}
+            onChange={(v) => updateGroups('citation', v)}
+          />
+        </div>
+        )}
         {/* 预览海报时：只显示海报的标题/副标题输入 */}
         {preview === 'grand' && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -600,11 +640,11 @@ export default function PosterSection() {
       <div ref={previewRef} className="space-y-8 overflow-x-auto rounded-md border bg-[#e5e5dd] p-6">
         {preview === 'grand' ? (
           <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
-            <GrandPoster awards={activeAwards} cols={cols} showAvatar={showAvatar} showOscar={showOscar} customTitle={customTitle} customSubtitle={customSubtitle} textScale={grandStyle.scale} textColor={grandStyle.color} />
+            <GrandPoster awards={activeAwards} cols={cols} showAvatar={showAvatar} showOscar={showOscar} customTitle={customTitle} customSubtitle={customSubtitle} textGroups={grandGroups} />
           </div>
         ) : (
           <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
-            <ListPoster awards={activeAwards} showAvatar={showAvatar} showOscar={showOscar} customTitle={customListTitle} customSubtitle={customListSubtitle} textScale={listStyle.scale} textColor={listStyle.color} />
+            <ListPoster awards={activeAwards} showAvatar={showAvatar} showOscar={showOscar} customTitle={customListTitle} customSubtitle={customListSubtitle} textGroups={listGroups} />
           </div>
         )}
       </div>

@@ -7,30 +7,56 @@ export interface PosterTextStyle {
   scale: number
 }
 
+/** 海报文字三组样式：标题/副标题、奖项名/电影信息、颁奖词 */
+export interface PosterTextGroups {
+  title: PosterTextStyle
+  info: PosterTextStyle
+  citation: PosterTextStyle
+}
+
+export const DEFAULT_TEXT_GROUPS: PosterTextGroups = {
+  title: { color: '', scale: 1 },
+  info: { color: '', scale: 1 },
+  citation: { color: '', scale: 1 },
+}
+
 const SCALES = [0.8, 0.9, 1, 1.1, 1.2, 1.3] as const
 
-/** 从 localStorage 读取文字样式（keyPrefix 如 'poster-grand-text'） */
-export function loadTextStyle(keyPrefix: string): PosterTextStyle {
-  const scale = Number(localStorage.getItem(`${keyPrefix}-scale`))
-  return {
-    color: localStorage.getItem(`${keyPrefix}-color`) ?? '',
-    scale: (SCALES as readonly number[]).includes(scale) ? scale : 1,
+function validScale(v: unknown): number {
+  return (SCALES as readonly number[]).includes(Number(v)) ? Number(v) : 1
+}
+
+function validColor(v: unknown): string {
+  return typeof v === 'string' ? v : ''
+}
+
+/** 从 localStorage 读取三组文字样式（keyPrefix 如 'poster-grand-text'） */
+export function loadTextGroups(keyPrefix: string): PosterTextGroups {
+  try {
+    const raw = localStorage.getItem(`${keyPrefix}-groups`)
+    if (!raw) return DEFAULT_TEXT_GROUPS
+    const p = JSON.parse(raw)
+    return {
+      title: { color: validColor(p?.title?.color), scale: validScale(p?.title?.scale) },
+      info: { color: validColor(p?.info?.color), scale: validScale(p?.info?.scale) },
+      citation: { color: validColor(p?.citation?.color), scale: validScale(p?.citation?.scale) },
+    }
+  } catch {
+    return DEFAULT_TEXT_GROUPS
   }
 }
 
-/** 将文字样式写入 localStorage */
-export function saveTextStyle(keyPrefix: string, v: PosterTextStyle) {
-  localStorage.setItem(`${keyPrefix}-scale`, String(v.scale))
-  if (v.color) localStorage.setItem(`${keyPrefix}-color`, v.color)
-  else localStorage.removeItem(`${keyPrefix}-color`)
+/** 将三组文字样式写入 localStorage */
+export function saveTextGroups(keyPrefix: string, g: PosterTextGroups) {
+  localStorage.setItem(`${keyPrefix}-groups`, JSON.stringify(g))
 }
 
-/** 海报文字样式控制（文字大小 + 文字颜色），放在导出清晰度按钮下方 */
-export default function TextStyleControls({ value, onChange }: { value: PosterTextStyle; onChange: (v: PosterTextStyle) => void }) {
+/** 单组海报文字样式控制（文字大小 + 文字颜色）；三行分别控制标题/副标题、奖项名/电影信息、颁奖词 */
+export default function TextStyleControls({ label, value, onChange }: { label: string; value: PosterTextStyle; onChange: (v: PosterTextStyle) => void }) {
   const customized = value.color !== '' || value.scale !== 1
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-bold">文字样式</span>
+      <span className="w-28 shrink-0 text-sm font-bold">{label}</span>
       <div className="flex items-center gap-1 rounded-md border p-0.5 text-sm">
         {SCALES.map((s) => (
           <button
