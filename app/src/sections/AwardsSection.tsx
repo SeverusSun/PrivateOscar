@@ -19,7 +19,7 @@ import { TBD_ID, type AwardDef, type Nomination, type PersonEntry } from '@/type
 import { StarDisplay, RATING_RANGES, USER_RATING_OPTIONS, type UserRatingKey } from './LibrarySection'
 
 /** Top 榜预设类别 */
-const TOP_CATEGORIES = ['最佳', '最爱', '导演', '男演', '女演', '科幻', '剧情', '爱情', '家庭', '惊悚', '奇幻', '喜剧', '历史', '动画']
+const TOP_CATEGORIES = ['最佳', '最爱', '导演', '男演', '女演', '科幻', '剧情', '爱情', '家庭', '惊悚', '奇幻', '喜剧', '历史', '战争', '歌舞', '同性', '动画']
 
 /** Top 榜「导演」类别的合成奖项定义：仅用于复用 resolvePerson 的导演照片自动匹配 */
 const TOP_DIRECTOR_AWARD: AwardDef = { id: 'top-director', name: '导演 Top', description: '', required: false, kind: 'manual' }
@@ -1082,8 +1082,8 @@ export default function AwardsSection() {
               ))}
             </div>
             <Input
-              className="max-w-xs"
-              placeholder="自定义类别（如：纪录片）"
+              className="w-[540px] max-w-full"
+              placeholder="自定义类别（如：纪录片/斯坦利·库布里克/法国新浪潮/20世纪）"
               value={TOP_CATEGORIES.includes(topCategory) ? '' : topCategory}
               onChange={(e) => setTopCategory(e.target.value)}
             />
