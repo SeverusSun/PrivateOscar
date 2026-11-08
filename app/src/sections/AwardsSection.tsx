@@ -932,21 +932,19 @@ export default function AwardsSection() {
             {awardMode === 'oscars' ? '按奖项评选，生成私人奥斯卡海报' : '按排名评选 Top N 榜单，生成榜单图片'}
           </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={awardMode === 'oscars' ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm"
+        <div className="flex w-fit items-center gap-1 rounded-md border p-0.5 text-sm">
+          <button
+            className={`rounded px-3 py-1 transition ${awardMode === 'oscars' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
             onClick={() => setAwardMode('oscars')}
           >
             奥斯卡
-          </Badge>
-          <Badge
-            variant={awardMode === 'top' ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm"
+          </button>
+          <button
+            className={`rounded px-3 py-1 transition ${awardMode === 'top' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
             onClick={() => setAwardMode('top')}
           >
             Top榜
-          </Badge>
+          </button>
         </div>
         <div className="mt-3 border-t pt-3">
         <div className="mb-3 flex items-center gap-3">
@@ -961,45 +959,61 @@ export default function AwardsSection() {
                   : '年度模式：除「最期待」外，各奖项从该年度「看过」影片中评选'}
           </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={yearMode === 'marked' ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm"
-            onClick={() => requestScope('mode-marked', () => setYearMode('marked'))}
+        <div className="flex w-fit items-center gap-1 rounded-md border p-0.5 text-sm">
+          <button
+            className={`rounded px-3 py-1 transition ${yearMode === 'marked' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            onClick={() => yearMode !== 'marked' && requestScope('mode-marked', () => setYearMode('marked'))}
           >
             标记年份
-          </Badge>
-          <Badge
-            variant={yearMode === 'release' ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm"
-            onClick={() => requestScope('mode-release', () => setYearMode('release'))}
+          </button>
+          <button
+            className={`rounded px-3 py-1 transition ${yearMode === 'release' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            onClick={() => yearMode !== 'release' && requestScope('mode-release', () => setYearMode('release'))}
           >
             上映年份
-          </Badge>
-          {yearMode === 'marked' && (
-          <Badge
-            variant={career ? 'default' : 'outline'}
-            className="cursor-pointer px-3 py-1.5 text-sm"
-            onClick={() => requestScope('career', () => setCareer(true))}
-          >
-            光影生涯
-          </Badge>
+          </button>
+        </div>
+        {/* 具体年份：标记年份用徽标按钮（含光影生涯），上映年份用下拉列表 */}
+        <div className="mt-2 flex flex-wrap gap-2">
+          {yearMode === 'marked' ? (
+            <>
+              <Badge
+                variant={career ? 'default' : 'outline'}
+                className="cursor-pointer px-3 py-1.5 text-sm"
+                onClick={() => !career && requestScope('career', () => setCareer(true))}
+              >
+                光影生涯
+              </Badge>
+              {years.map((y) => (
+                <Badge
+                  key={y}
+                  variant={!career && year === y ? 'default' : 'outline'}
+                  className="cursor-pointer px-3 py-1.5 text-sm"
+                  onClick={() =>
+                    requestScope(`year-${y}`, () => {
+                      setCareer(false)
+                      setYear(y)
+                    })
+                  }
+                >
+                  {y} 年
+                </Badge>
+              ))}
+            </>
+          ) : (
+            <Select value={String(year)} onValueChange={(v) => requestScope(`release-year-${v}`, () => setYear(Number(v)))}>
+              <SelectTrigger className="h-8 w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y} 年上映
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
-          {years.map((y) => (
-            <Badge
-              key={y}
-              variant={!career && year === y ? 'default' : 'outline'}
-              className="cursor-pointer px-3 py-1.5 text-sm"
-              onClick={() =>
-                requestScope(`year-${y}`, () => {
-                  setCareer(false)
-                  setYear(y)
-                })
-              }
-            >
-              {y} 年
-            </Badge>
-          ))}
         </div>
         {confirmScope && (
           <p className="mt-2 text-xs font-medium text-orange-600">⚠ 切换评选范围将清空所有提名电影和已评奖项，请再次点击</p>
