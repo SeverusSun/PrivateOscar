@@ -9,6 +9,7 @@ import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS,
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
+import { embedJpegMeta } from '@/lib/posterMeta'
 import oscarUrl from '@/assets/oscar.png'
 import oscarSilhouetteUrl from '@/assets/oscar-silhouette.png'
 import { TBD_ID } from '@/types'
@@ -385,7 +386,12 @@ export default function PosterSection() {
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(img, 0, 0)
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
+      const dataUrl = embedJpegMeta(canvas.toDataURL('image/jpeg', 0.92), {
+        user: profile?.name ?? '',
+        posterType: preview === 'grand' ? 'oscar' : 'nominations',
+        scope: career ? 'career' : String(year),
+        topCategory: '',
+      })
       const a = document.createElement('a')
       a.download = filename
       a.href = dataUrl
