@@ -14,6 +14,8 @@ export interface PosterMeta {
   scope: string
   /** Top 榜类别（仅 Top 榜海报） */
   topCategory?: string
+  /** 年份口径：marked=标记年份，release=上映年份（career 时无意义） */
+  yearMode?: 'marked' | 'release'
 }
 
 export function posterMetaJson(meta: PosterMeta): string {
@@ -23,6 +25,7 @@ export function posterMetaJson(meta: PosterMeta): string {
     posterType: meta.posterType,
     scope: meta.scope,
     topCategory: meta.topCategory ?? '',
+    yearMode: meta.yearMode ?? 'marked',
   })
 }
 

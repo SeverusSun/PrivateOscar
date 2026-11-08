@@ -204,6 +204,7 @@ export default function LibrarySection() {
   const { movies, year: awardYear } = useStore()
   const [status, setStatus] = useState<'all' | MovieStatus>('all')
   const [year, setYear] = useState<string>('all')
+  const [yearMode, setYearMode] = useState<'marked' | 'release'>('marked')
   const [rangeId, setRangeId] = useState<string>('all')
   const [userRatings, setUserRatings] = useState<Set<UserRatingKey>>(new Set())
   const [query, setQuery] = useState('')
@@ -218,11 +219,11 @@ export default function LibrarySection() {
   const years = useMemo(() => {
     const set = new Set<number>()
     for (const m of movies) {
-      const y = Number((m.markedAt || '').slice(0, 4))
+      const y = Number(yearMode === 'release' ? m.year : (m.markedAt || '').slice(0, 4))
       if (y > 1900) set.add(y)
     }
     return Array.from(set).sort((a, b) => b - a)
-  }, [movies])
+  }, [movies, yearMode])
 
   const toggleUserRating = (k: UserRatingKey) => {
     setUserRatings((s) => {
@@ -236,7 +237,7 @@ export default function LibrarySection() {
   const list = useMemo(() => {
     let l = movies
     if (status !== 'all') l = l.filter((m) => m.status === status)
-    if (year !== 'all') l = l.filter((m) => (m.markedAt || '').startsWith(year))
+    if (year !== 'all') l = l.filter((m) => (yearMode === 'release' ? m.year === year : (m.markedAt || '').startsWith(year)))
     const range = RATING_RANGES.find((r) => r.id === rangeId)!
     l = l.filter((m) => (m.doubanRating != null ? range.test(m.doubanRating) : range.id === 'all'))
     if (userRatings.size > 0) {
@@ -250,12 +251,12 @@ export default function LibrarySection() {
       l = l.filter((m) => m.title.toLowerCase().includes(q) || m.directors.some((d) => d.name.includes(q)))
     }
     return l.sort((a, b) => (a.markedAt < b.markedAt ? 1 : -1))
-  }, [movies, status, year, rangeId, userRatings, query])
+  }, [movies, status, year, yearMode, rangeId, userRatings, query])
 
   // 各状态下的数量（应用除状态外的其他筛选条件，便于对照）
   const statusCounts = useMemo(() => {
     const base = movies.filter((m) => {
-      if (year !== 'all' && !(m.markedAt || '').startsWith(year)) return false
+      if (year !== 'all' && !(yearMode === 'release' ? m.year === year : (m.markedAt || '').startsWith(year))) return false
       const range = RATING_RANGES.find((r) => r.id === rangeId)!
       if (!(m.doubanRating != null ? range.test(m.doubanRating) : range.id === 'all')) return false
       if (userRatings.size > 0) {
@@ -274,7 +275,7 @@ export default function LibrarySection() {
       doing: base.filter((m) => m.status === 'doing').length,
       wish: base.filter((m) => m.status === 'wish').length,
     }
-  }, [movies, year, rangeId, userRatings, query])
+  }, [movies, year, yearMode, rangeId, userRatings, query])
 
   const hasFilter = status !== 'all' || year !== 'all' || rangeId !== 'all' || userRatings.size > 0 || query.trim() !== ''
 
@@ -303,6 +304,20 @@ export default function LibrarySection() {
         </Badge>
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">年份</span>
+          <div className="flex items-center gap-1 rounded-md border p-0.5 text-xs">
+            {([['marked', '标记年份'], ['release', '上映年份']] as const).map(([k, label]) => (
+              <button
+                key={k}
+                className={`rounded px-2 py-0.5 transition ${yearMode === k ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                onClick={() => {
+                  setYearMode(k)
+                  setYear('all')
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <Select value={year} onValueChange={setYear}>
             <SelectTrigger className="h-8 w-32">
               <SelectValue />
@@ -351,7 +366,7 @@ export default function LibrarySection() {
           </div>
         </div>
         {hasFilter && (
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setStatus('all'); setYear('all'); setRangeId('all'); setUserRatings(new Set()); setQuery('') }}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setStatus('all'); setYearMode('marked'); setYear('all'); setRangeId('all'); setUserRatings(new Set()); setQuery('') }}>
             清除筛选
           </Button>
         )}

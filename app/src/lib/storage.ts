@@ -12,10 +12,12 @@ export interface AppState {
   topCategory: string
   /** Top 榜各名次的入选影片：名次(字符串) → 影片、颁奖词与手动人物资料 */
   topPicks: Record<string, { movieId: string; citation?: string; person?: PersonEntry }>
-  /** 参评年份：只展示/评选该年记录的词条 */
+  /** 参评年份：只展示/评选该年（口径见 yearMode）的词条 */
   year: number
-  /** 生涯评选模式：true 时从全部年份的词条中提名 */
+  /** 生涯评选模式：true 时从全部年份的词条中提名（仅标记年份口径下可用） */
   career: boolean
+  /** 年份口径：marked=标记年份（何时记录），release=上映年份 */
+  yearMode: 'marked' | 'release'
   /** 启用的可选奖项 id */
   enabledOptional: string[]
   /** 用户自定义奖项池（默认启用，可开关、可删除，可补充说明） */
@@ -40,6 +42,7 @@ export const defaultState: AppState = {
   topPicks: {},
   year: new Date().getFullYear() - 1,
   career: false,
+  yearMode: 'marked',
   enabledOptional: AWARDS.filter((a) => !a.required).map((a) => a.id),
   customAwards: [],
   awardDescOverrides: {},

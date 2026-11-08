@@ -19,6 +19,8 @@ interface StoreCtx extends AppState {
   /** 交换两个名次的入选（含颁奖词/手动资料）；目标为空则等价于移动 */
   swapTopPicks: (from: number, to: number) => void
   setCareer: (c: boolean) => void
+  /** 切换年份口径（标记年份/上映年份）；切到上映年份时自动退出光影生涯 */
+  setYearMode: (m: 'marked' | 'release') => void
   toggleOptional: (id: string) => void
   /** 一键开启/关闭全部可选奖项 */
   setAllOptional: (on: boolean) => void
@@ -106,10 +108,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const pos = new Map(state.awardOrder.map((id, i) => [id, i]))
       activeAwards.sort((a, b) => (pos.get(a.id) ?? Infinity) - (pos.get(b.id) ?? Infinity))
     }
-    const moviesOfYear = state.movies
-      .filter((m) => (m.markedAt || '').startsWith(String(state.year)))
-      .sort((a, b) => (a.markedAt < b.markedAt ? 1 : -1))
-    const eligibleMovies = state.career ? [...state.movies].sort((a, b) => (a.markedAt < b.markedAt ? 1 : -1)) : moviesOfYear
+    // 年份口径：标记年份按记录时间（markedAt），上映年份按词条的上映年份
+    const inScopeYear = (m: MovieEntry) =>
+      state.yearMode === 'release' ? m.year === String(state.year) : (m.markedAt || '').startsWith(String(state.year))
+    const moviesOfYear = state.movies.filter(inScopeYear).sort((a, b) => (a.markedAt < b.markedAt ? 1 : -1))
+    // 光影生涯仅存在于标记年份口径；上映年份口径始终按单年评选
+    const eligibleMovies =
+      state.career && state.yearMode === 'marked' ? [...state.movies].sort((a, b) => (a.markedAt < b.markedAt ? 1 : -1)) : moviesOfYear
     const movieById = (id: string) => state.movies.find((m) => m.id === id)
 
     return {
@@ -119,7 +124,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       eligibleMovies,
       movieById,
       setAwardOrder: (ids) => setState((s) => ({ ...s, awardOrder: ids })),
-      setCareer: (career) => setState((s) => ({ ...s, career })),
+      setCareer: (career) => setState((s) => ({ ...s, career, yearMode: career ? 'marked' : s.yearMode })),
+      setYearMode: (yearMode) => setState((s) => ({ ...s, yearMode, career: yearMode === 'release' ? false : s.career })),
       setProfile: (profile) => setState((s) => ({ ...s, profile })),
       setMovies: (movies) => setState((s) => ({ ...s, movies })),
       setYear: (year) => setState((s) => ({ ...s, year })),

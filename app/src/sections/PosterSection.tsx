@@ -73,7 +73,7 @@ function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { 
 
 /** 海报一：私人奥斯卡海报（奖项名在上、图片居中、片名/导演/评分在下；支持 2 / 4 / 6 列切换；无颁奖词） */
 function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; cols: 2 | 4 | 6; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
-  const { profile, movieById, year, career, getResult } = useStore()
+  const { profile, movieById, year, yearMode, career, getResult } = useStore()
   // 单元格宽度不变：2 列 470、4/6 列 235；6 列时整幅宽度约为 4 列的 1.5 倍
   const imgW = cols === 2 ? 470 : 235
   const posterW = cols === 6 ? 1620 : 1080
@@ -86,7 +86,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
   const fsi = (px: number) => Math.round(px * gi.scale)
   const heading =
     customTitle?.trim() ||
-    (career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year} 私人奥斯卡`)
+    (career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year}${yearMode === 'release' ? '上映' : ''} 私人奥斯卡`)
   const subtitle = customSubtitle?.trim() || 'PERSONAL ACADEMY AWARDS'
   return (
     <div
@@ -210,7 +210,7 @@ function GrandPoster({ awards, cols, showAvatar, showOscar, customTitle, customS
 
 /** 海报二：详细提名列表海报（仅文字；获奖烫金，提名墨绿） */
 function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { awards: AwardDef[]; showAvatar: boolean; showOscar: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
-  const { profile, movieById, year, career, getResult } = useStore()
+  const { profile, movieById, year, yearMode, career, getResult } = useStore()
   // 三组文字样式：标题/副标题、奖项名/电影信息、颁奖词
   const gt = textGroups.title
   const gi = textGroups.info
@@ -220,8 +220,8 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
   const fsc = (px: number) => Math.round(px * gc.scale)
   const heading =
     customTitle?.trim() ||
-    `${career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year} 私人奥斯卡`}完整名单`
-  const subtitle = customSubtitle?.trim() || (career ? 'NOMINATIONS · CAREER' : `NOMINATIONS · ${year}`)
+    `${career ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡` : `${profile?.name ? profile.name + ' ' : ''}${year}${yearMode === 'release' ? '上映' : ''} 私人奥斯卡`}完整名单`
+  const subtitle = customSubtitle?.trim() || (career ? 'NOMINATIONS · CAREER' : `NOMINATIONS · ${year}${yearMode === 'release' ? '上映' : ''}`)
   return (
     <div
       id="list-poster"
@@ -321,7 +321,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
 }
 
 export default function PosterSection() {
-  const { activeAwards, year, career, profile, getResult } = useStore()
+  const { activeAwards, year, yearMode, career, profile, getResult } = useStore()
   const [exporting, setExporting] = useState<string | null>(null)
   const [cols, setCols] = useState<2 | 4 | 6>(4)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
@@ -391,6 +391,7 @@ export default function PosterSection() {
         posterType: preview === 'grand' ? 'oscar' : 'nominations',
         scope: career ? 'career' : String(year),
         topCategory: '',
+        yearMode,
       })
       const a = document.createElement('a')
       a.download = filename
@@ -406,19 +407,20 @@ export default function PosterSection() {
   }
 
   const awardedCount = activeAwards.length
+  const yearLabel = career ? '光影生涯' : yearMode === 'release' ? `${year}上映` : `${year} 年度`
   const defaultGrandTitle = career
     ? `${profile?.name ? profile.name + ' ' : ''}光影生涯奥斯卡`
-    : `${profile?.name ? profile.name + ' ' : ''}${year} 私人奥斯卡`
+    : `${profile?.name ? profile.name + ' ' : ''}${year}${yearMode === 'release' ? '上映' : ''} 私人奥斯卡`
   const defaultListTitle = `${defaultGrandTitle}完整名单`
   const defaultGrandSubtitle = 'PERSONAL ACADEMY AWARDS'
-  const defaultListSubtitle = career ? 'NOMINATIONS · CAREER' : `NOMINATIONS · ${year}`
+  const defaultListSubtitle = career ? 'NOMINATIONS · CAREER' : `NOMINATIONS · ${year}${yearMode === 'release' ? '上映' : ''}`
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {/* 导出设置：合并为一个卡片 */}
       <div className="space-y-3 rounded-md border bg-card p-4">
         <div>
-          <h3 className="font-bold">生成 {career ? '光影生涯' : `${year} 年度`}海报</h3>
+          <h3 className="font-bold">生成 {yearLabel}海报</h3>
           <p className="text-sm text-muted-foreground">
             {profile ? `${profile.name} · ` : ''}共 {awardedCount} 个奖项。请先完成「评选」页的奖项设置，再导出海报。
           </p>
@@ -611,12 +613,12 @@ export default function PosterSection() {
         )}
         <div className="flex flex-wrap gap-2 border-t pt-3">
           {preview === 'grand' ? (
-            <Button onClick={() => exportPoster('grand-poster', career ? '光影生涯奥斯卡海报.jpg' : `${year}私人奥斯卡海报.jpg`)} disabled={!!exporting}>
+            <Button onClick={() => exportPoster('grand-poster', career ? '光影生涯奥斯卡海报.jpg' : `${year}${yearMode === 'release' ? '上映' : ''}私人奥斯卡海报.jpg`)} disabled={!!exporting}>
               {exporting === 'grand-poster' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               导出海报
             </Button>
           ) : (
-            <Button onClick={() => exportPoster('list-poster', career ? '光影生涯奥斯卡完整名单.jpg' : `${year}私人奥斯卡完整名单.jpg`)} disabled={!!exporting}>
+            <Button onClick={() => exportPoster('list-poster', career ? '光影生涯奥斯卡完整名单.jpg' : `${year}${yearMode === 'release' ? '上映' : ''}私人奥斯卡完整名单.jpg`)} disabled={!!exporting}>
               {exporting === 'list-poster' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
               导出完整名单
             </Button>

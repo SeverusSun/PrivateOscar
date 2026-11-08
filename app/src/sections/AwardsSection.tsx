@@ -837,7 +837,7 @@ function AwardCard({ award, collapsed }: { award: AwardDef; collapsed?: boolean 
 }
 
 export default function AwardsSection() {
-  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllClassic, setAllCustom, customAwards, year, setYear, career, setCareer, movies, setAwardOrder, clearResults, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
+  const { activeAwards, enabledOptional, toggleOptional, addCustomAward, removeCustomAward, toggleCustomAward, updateCustomAward, clearCustomAwards, setAllOptional, setAllClassic, setAllCustom, customAwards, year, setYear, yearMode, setYearMode, career, setCareer, movies, setAwardOrder, clearResults, getResult, awardDescOverrides, setAwardDescription, awardMode, setAwardMode, topN, setTopN, topCategory, setTopCategory, topPicks } = useStore()
   const [customName, setCustomName] = useState('')
   const [descAwardId, setDescAwardId] = useState('')
   const [dragId, setDragId] = useState<string | null>(null)
@@ -916,12 +916,12 @@ export default function AwardsSection() {
   const years = useMemo(() => {
     const set = new Set<number>()
     for (const m of movies) {
-      const y = Number((m.markedAt || '').slice(0, 4))
+      const y = Number(yearMode === 'release' ? m.year : (m.markedAt || '').slice(0, 4))
       if (y > 1900) set.add(y)
     }
     set.add(year)
     return Array.from(set).sort((a, b) => b - a)
-  }, [movies, year])
+  }, [movies, year, yearMode])
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -956,10 +956,27 @@ export default function AwardsSection() {
               ? 'Top 榜：从评选范围内的「看过」影片中按名次评选'
               : career
                 ? '光影生涯：除「最期待」外，各奖项从全部「看过」影片中评选'
-                : '年度模式：除「最期待」外，各奖项从该年度「看过」影片中评选'}
+                : yearMode === 'release'
+                  ? '上映年份：除「最期待」外，各奖项从该年上映的「看过」影片中评选'
+                  : '年度模式：除「最期待」外，各奖项从该年度「看过」影片中评选'}
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Badge
+            variant={yearMode === 'marked' ? 'default' : 'outline'}
+            className="cursor-pointer px-3 py-1.5 text-sm"
+            onClick={() => requestScope('mode-marked', () => setYearMode('marked'))}
+          >
+            标记年份
+          </Badge>
+          <Badge
+            variant={yearMode === 'release' ? 'default' : 'outline'}
+            className="cursor-pointer px-3 py-1.5 text-sm"
+            onClick={() => requestScope('mode-release', () => setYearMode('release'))}
+          >
+            上映年份
+          </Badge>
+          {yearMode === 'marked' && (
           <Badge
             variant={career ? 'default' : 'outline'}
             className="cursor-pointer px-3 py-1.5 text-sm"
@@ -967,6 +984,7 @@ export default function AwardsSection() {
           >
             光影生涯
           </Badge>
+          )}
           {years.map((y) => (
             <Badge
               key={y}
@@ -1094,7 +1112,7 @@ export default function AwardsSection() {
         <>
           <div className="text-center">
             <h3 className="text-lg font-bold">
-              {career ? '光影生涯' : `${year} 年`} {topCategory} Top {topN}
+              {career ? '光影生涯' : yearMode === 'release' ? `${year}上映` : `${year} 年`} {topCategory} Top {topN}
             </h3>
           </div>
           <div className="space-y-4">
@@ -1352,7 +1370,7 @@ export default function AwardsSection() {
 
       <div className="text-center">
         <h3 className="text-lg font-bold">
-          {career ? '光影生涯奥斯卡' : `${year} 年私人奥斯卡`} · 共 {activeAwards.length} 个奖项
+          {career ? '光影生涯奥斯卡' : yearMode === 'release' ? `${year}上映私人奥斯卡` : `${year} 年私人奥斯卡`} · 共 {activeAwards.length} 个奖项
         </h3>
       </div>
 

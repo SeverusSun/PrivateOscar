@@ -37,7 +37,7 @@ function StarRow({ value, size = 14 }: { value: number | null; size?: number }) 
 
 /** 榜单海报：报头 + Top 1 ~ N 排名行（海报宽度 1080，高度随名次数量变化） */
 function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, textGroups = DEFAULT_TEXT_GROUPS }: { showAvatar: boolean; showOscar: boolean; medal: boolean; customTitle?: string; customSubtitle?: string; textGroups?: PosterTextGroups }) {
-  const { profile, year, career, topN, topCategory, topPicks, movieById } = useStore()
+  const { profile, year, yearMode, career, topN, topCategory, topPicks, movieById } = useStore()
   // 三组文字样式：标题/副标题、奖项名/电影信息、颁奖词
   const gt = textGroups.title
   const gi = textGroups.info
@@ -48,7 +48,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
   const isPersonCategory = topCategory === '导演' || topCategory === '男演' || topCategory === '女演'
   const heading =
     customTitle?.trim() ||
-    `${profile?.name ? profile.name + ' ' : ''}${career ? '光影生涯' : year} ${topCategory} Top ${topN}`
+    `${profile?.name ? profile.name + ' ' : ''}${career ? '光影生涯' : `${year}${yearMode === 'release' ? '上映' : ''}`} ${topCategory} Top ${topN}`
   const subtitle = customSubtitle?.trim() || `PERSONAL TOP ${topN}`
   const ranks = Array.from({ length: topN }, (_, i) => i + 1)
   // 懒加载入选影片的演职员数据，供人物类类别（导演/男演/女演）自动匹配照片
@@ -174,7 +174,7 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
 }
 
 export default function TopSection() {
-  const { profile, year, career, topN, topCategory } = useStore()
+  const { profile, year, yearMode, career, topN, topCategory } = useStore()
   const [exporting, setExporting] = useState(false)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
   const [customTitle, setCustomTitle] = useState(() => localStorage.getItem('top-custom-title') ?? '')
@@ -204,7 +204,7 @@ export default function TopSection() {
 
   const scale = Math.max(0.2, Math.min(1, (containerW - 48) / 1080))
 
-  const defaultTitle = `${profile?.name ? profile.name + ' ' : ''}${career ? '光影生涯' : year} ${topCategory} Top ${topN}`
+  const defaultTitle = `${profile?.name ? profile.name + ' ' : ''}${career ? '光影生涯' : `${year}${yearMode === 'release' ? '上映' : ''}`} ${topCategory} Top ${topN}`
   const defaultSubtitle = `PERSONAL TOP ${topN}`
 
   async function exportTop() {
@@ -230,6 +230,7 @@ export default function TopSection() {
         posterType: 'top',
         scope: career ? 'career' : String(year),
         topCategory,
+        yearMode,
       })
       const a = document.createElement('a')
       a.download = `${defaultTitle}.jpg`
