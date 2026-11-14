@@ -334,7 +334,7 @@ export default function PosterSection() {
   // 懒加载全部提名影片的演职员数据，供人物照片自动匹配
   const nominatedIds = activeAwards.flatMap((a) => getResult(a.id).nominations.map((n) => n.movieId).filter((id) => id !== TBD_ID))
   useCreditsLoader(nominatedIds)
-  const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
+  const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') !== '0')
   const [showOscar, setShowOscar] = useState(() => localStorage.getItem('poster-show-oscar') !== '0')
   const [nameOnly, setNameOnly] = useState(() => localStorage.getItem('poster-name-only') === '1')
   // 海报/名单三组文字样式（标题/副标题、奖项名/电影信息、颁奖词），各自保存在 localStorage

@@ -18,8 +18,10 @@ export interface AppState {
   career: boolean
   /** 年份口径：marked=标记年份（何时记录），release=上映年份 */
   yearMode: 'marked' | 'release'
-  /** 启用的可选奖项 id */
+  /** 启用的奖项 id（传统奖项 + 可选奖项统一由此控制，默认全部开启） */
   enabledOptional: string[]
+  /** 传统奖项整体开关：true 表示用户主动关闭（用于区分旧数据默认补开与用户选择） */
+  classicOff?: boolean
   /** 用户自定义奖项池（默认启用，可开关、可删除，可补充说明） */
   customAwards: { id: string; name: string; enabled?: boolean; description?: string }[]
   /** 内置奖项（必选/可选）的说明覆盖：id → 自定义说明；无覆盖时用默认说明 */
@@ -41,9 +43,10 @@ export const defaultState: AppState = {
   topCategory: '最佳',
   topPicks: {},
   year: new Date().getFullYear() - 1,
-  career: false,
+  career: true,
   yearMode: 'marked',
-  enabledOptional: AWARDS.filter((a) => !a.required).map((a) => a.id),
+  enabledOptional: AWARDS.map((a) => a.id),
+  classicOff: false,
   customAwards: [],
   awardDescOverrides: {},
   awardOrder: [],
@@ -56,12 +59,29 @@ export function loadState(): AppState {
     const raw = localStorage.getItem(KEY)
     if (!raw) return defaultState
     const parsed = JSON.parse(raw) as AppState
-    // 迁移：传统奖项（原必选奖项）中的 6 项移入可选奖项，为老数据默认补开
+    // 迁移一：传统奖项（原必选奖项）中的 6 项移入可选奖项，仅为旧版数据默认补开
+    //（yearMode 是后加字段，缺省视为旧版数据；新版用户单独关闭其中某项应予以保留）
     const enabledOptional = [...(parsed.enabledOptional ?? [])]
-    for (const id of MOVED_TO_FRONT_IDS) {
-      if (!enabledOptional.includes(id)) enabledOptional.push(id)
+    if (parsed.yearMode === undefined) {
+      for (const id of MOVED_TO_FRONT_IDS) {
+        if (!enabledOptional.includes(id)) enabledOptional.push(id)
+      }
     }
-    return { ...defaultState, ...parsed, enabledOptional }
+    // 迁移二：必选奖项此前一直实际生效、但从未写入 enabledOptional；
+    // 借助 classicOff 区分“旧数据默认补开”与“用户主动关闭传统奖项”
+    const requiredIds = AWARDS.filter((a) => a.required).map((a) => a.id)
+    const classicOff = parsed.classicOff === true
+    if (!classicOff && !requiredIds.some((id) => enabledOptional.includes(id))) {
+      for (const id of requiredIds) {
+        if (!enabledOptional.includes(id)) enabledOptional.push(id)
+      }
+    }
+    if (classicOff) {
+      for (let i = enabledOptional.length - 1; i >= 0; i--) {
+        if (requiredIds.includes(enabledOptional[i])) enabledOptional.splice(i, 1)
+      }
+    }
+    return { ...defaultState, ...parsed, enabledOptional, classicOff }
   } catch {
     return defaultState
   }

@@ -102,7 +102,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // 内置奖项的说明覆盖（无覆盖时用默认说明）
     const applyDescOverride = (a: AwardDef): AwardDef => ({ ...a, description: state.awardDescOverrides[a.id] ?? a.description })
     const activeAwards = [
-      ...AWARDS.filter((a) => a.required || state.enabledOptional.includes(a.id)).map(applyDescOverride),
+      ...AWARDS.filter((a) => state.enabledOptional.includes(a.id)).map(applyDescOverride),
       ...customDefs,
     ]
     // 应用用户自定义排序：出现在 awardOrder 中的按序前置，其余保持原顺序追加
@@ -183,17 +183,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             : [...s.enabledOptional, id],
         })),
       setAllOptional: (on) =>
-        setState((s) => ({
-          ...s,
-          enabledOptional: on ? AWARDS.filter((a) => !a.required).map((a) => a.id) : [],
-        })),
+        setState((s) => {
+          // 只动可选奖项，保留传统奖项的现有状态
+          const optionalIds = AWARDS.filter((a) => !a.required).map((a) => a.id)
+          const set = new Set(s.enabledOptional)
+          for (const id of optionalIds) {
+            if (on) set.add(id)
+            else set.delete(id)
+          }
+          return { ...s, enabledOptional: [...set] }
+        }),
       setAllClassic: (on) =>
         setState((s) => {
           const classicIds = AWARDS.filter((a) => a.required).map((a) => a.id)
           const enabledOptional = on
             ? Array.from(new Set([...s.enabledOptional, ...classicIds]))
             : s.enabledOptional.filter((x) => !classicIds.includes(x))
-          return { ...s, enabledOptional }
+          return { ...s, enabledOptional, classicOff: !on }
         }),
       setAllCustom: (on) =>
         setState((s) => ({
@@ -254,6 +260,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           'poster-show-avatar',
           'poster-show-oscar',
           'poster-name-only',
+          'top-show-avatar',
           'top-show-medal',
           'sync-include-tv',
           'library-view-mode',

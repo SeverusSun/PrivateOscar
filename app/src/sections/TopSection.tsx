@@ -179,7 +179,7 @@ export default function TopSection() {
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
   const [customTitle, setCustomTitle] = useState(() => localStorage.getItem('top-custom-title') ?? '')
   const [customSubtitle, setCustomSubtitle] = useState(() => localStorage.getItem('top-custom-subtitle') ?? '')
-  const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('poster-show-avatar') === '1')
+  const [showAvatar, setShowAvatar] = useState(() => localStorage.getItem('top-show-avatar') !== '0')
   const [showOscar, setShowOscar] = useState(() => localStorage.getItem('poster-show-oscar') !== '0')
   const [medal, setMedal] = useState(() => localStorage.getItem('top-show-medal') !== '0')
   // 榜单文字样式（标题/副标题、奖项名/电影信息、颁奖词三组），保存在 localStorage
@@ -271,7 +271,7 @@ export default function TopSection() {
               checked={showAvatar}
               onCheckedChange={(on) => {
                 setShowAvatar(on)
-                localStorage.setItem('poster-show-avatar', on ? '1' : '0')
+                localStorage.setItem('top-show-avatar', on ? '1' : '0')
               }}
             />
             报头显示豆瓣头像
