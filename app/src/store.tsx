@@ -6,6 +6,8 @@ import { defaultState, loadState, saveState, type AppState } from '@/lib/storage
 interface StoreCtx extends AppState {
   setProfile: (p: Profile | null) => void
   setMovies: (m: MovieEntry[]) => void
+  /** 手动同步：按 id 合并入库，跳过已存在的词条 */
+  addMovies: (entries: MovieEntry[]) => void
   setYear: (y: number) => void
   setAwardMode: (m: 'oscars' | 'top') => void
   setTopN: (n: number) => void
@@ -130,6 +132,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setYearMode: (yearMode) => setState((s) => ({ ...s, yearMode, career: yearMode === 'release' ? false : s.career })),
       setProfile: (profile) => setState((s) => ({ ...s, profile })),
       setMovies: (movies) => setState((s) => ({ ...s, movies })),
+      // 手动同步：按 id 合并入库，跳过已存在的词条
+      addMovies: (entries) =>
+        setState((s) => {
+          const existing = new Set(s.movies.map((m) => m.id))
+          const fresh = entries.filter((m) => !existing.has(m.id))
+          return fresh.length ? { ...s, movies: [...s.movies, ...fresh] } : s
+        }),
       setYear: (year) => setState((s) => ({ ...s, year })),
       setAwardMode: (awardMode) => setState((s) => ({ ...s, awardMode })),
       setTopN: (topN) => setState((s) => ({ ...s, topN })),

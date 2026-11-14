@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Award, Trash2, Crown, ImagePlus, PlusCircle, Pencil, ChevronUp, ChevronDown, CheckSquare, Search, GripVertical, MousePointerClick, Quote } from 'lucide-react'
+import { Award, Trash2, Crown, ImagePlus, PlusCircle, Pencil, ChevronUp, ChevronDown, CheckSquare, Search, GripVertical, MousePointerClick, Quote, FilePlus2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { useStore } from '@/store'
+import ManualSyncDialog from '@/components/ManualSyncDialog'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
 import { OPTIONAL_AWARDS, ORDERED_OPTIONAL_AWARDS, REQUIRED_AWARDS } from '@/data/awards'
@@ -94,6 +95,7 @@ function NominationPickerDialog({
 }) {
   const { movies, eligibleMovies } = useStore()
   const [checked, setChecked] = useState<Set<string>>(() => new Set(nominations.map((n) => n.movieId)))
+  const [manualOpen, setManualOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [rangeId, setRangeId] = useState<string>('all')
   const [userRatings, setUserRatings] = useState<Set<UserRatingKey>>(new Set())
@@ -142,6 +144,7 @@ function NominationPickerDialog({
   const toggleTbd = (on: boolean) => setChecked(on ? new Set([TBD_ID]) : new Set())
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={(o) => {
@@ -170,7 +173,17 @@ function NominationPickerDialog({
               <span className="block text-xs text-muted-foreground">感觉选不出合适的呢</span>
             </span>
           </label>
-          {filtered.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">没有「{poolLabel}」的影片</div>}
+          {filtered.length === 0 && (
+            <div className="space-y-3 py-8 text-center">
+              <div className="text-sm text-muted-foreground">没有「{poolLabel}」的影片</div>
+              {/* 看过类奖项支持手动补录；想看类（最期待）补录后也不入池，不显示入口 */}
+              {pool !== 'wish' && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setManualOpen(true)}>
+                  <FilePlus2 className="h-3.5 w-3.5" /> 手动同步电影词条
+                </Button>
+              )}
+            </div>
+          )}
           {filtered.map((m) => {
             const nominated = nominations.some((n) => n.movieId === m.id)
             return (
@@ -211,6 +224,9 @@ function NominationPickerDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {/* 手动同步浮窗独立于选片弹窗渲染，避免嵌套 Dialog 的焦点陷阱冲突；预填当前搜索词 */}
+    <ManualSyncDialog open={manualOpen} onClose={() => setManualOpen(false)} initialQuery={query} />
+    </>
   )
 }
 
@@ -359,6 +375,7 @@ function CitationButton({ citation, description, shortComment, onChange }: { cit
 function TopPickDialog({ open, onClose, onPick, currentRank }: { open: boolean; onClose: () => void; onPick: (movieId: string) => void; currentRank: number }) {
   const { eligibleMovies, topPicks } = useStore()
   const [query, setQuery] = useState('')
+  const [manualOpen, setManualOpen] = useState(false)
   const [pendingMove, setPendingMove] = useState<string | null>(null)
   const [rangeId, setRangeId] = useState<string>('all')
   const [userRatings, setUserRatings] = useState<Set<UserRatingKey>>(new Set())
@@ -404,6 +421,7 @@ function TopPickDialog({ open, onClose, onPick, currentRank }: { open: boolean; 
   }
 
   return (
+    <>
     <Dialog
       open={open}
       onOpenChange={(o) => {
@@ -420,7 +438,14 @@ function TopPickDialog({ open, onClose, onPick, currentRank }: { open: boolean; 
         </div>
         <DialogFilters rangeId={rangeId} onRangeChange={setRangeId} userRatings={userRatings} onUserRatingsChange={setUserRatings} />
         <div className="max-h-[46vh] space-y-0.5 overflow-y-auto rounded-md border p-2">
-          {filtered.length === 0 && <div className="py-8 text-center text-sm text-muted-foreground">没有「看过」的影片</div>}
+          {filtered.length === 0 && (
+            <div className="space-y-3 py-8 text-center">
+              <div className="text-sm text-muted-foreground">没有「看过」的影片</div>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setManualOpen(true)}>
+                <FilePlus2 className="h-3.5 w-3.5" /> 手动同步电影词条
+              </Button>
+            </div>
+          )}
           {filtered.map((m) => {
             const inOther = rankOf(m.id)
             return (
@@ -455,6 +480,9 @@ function TopPickDialog({ open, onClose, onPick, currentRank }: { open: boolean; 
         <p className="text-xs text-muted-foreground">点击影片即入选该名次；已入选其他名次的影片置灰显示，再次点击可移动到该名次。</p>
       </DialogContent>
     </Dialog>
+    {/* 手动同步浮窗独立于选片弹窗渲染，避免嵌套 Dialog 的焦点陷阱冲突；预填当前搜索词 */}
+    <ManualSyncDialog open={manualOpen} onClose={() => setManualOpen(false)} initialQuery={query} />
+    </>
   )
 }
 

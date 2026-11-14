@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Star, Search, Film, LayoutGrid, List } from 'lucide-react'
+import { Star, Search, Film, LayoutGrid, List, FilePlus2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useStore } from '@/store'
+import ManualSyncDialog from '@/components/ManualSyncDialog'
 import { proxiedImage } from '@/lib/storage'
 import type { MovieEntry, MovieStatus } from '@/types'
 
@@ -210,6 +211,7 @@ export default function LibrarySection() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<MovieEntry | null>(null)
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => (localStorage.getItem('library-view-mode') === 'list' ? 'list' : 'card'))
+  const [manualOpen, setManualOpen] = useState(false)
 
   const changeViewMode = (mode: 'card' | 'list') => {
     setViewMode(mode)
@@ -388,7 +390,16 @@ export default function LibrarySection() {
             </button>
           </div>
         </div>
+        {/* 手动同步：视图按钮下方，补录同步时遗漏的词条 */}
+        <div className="flex basis-full items-center border-t pt-3">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setManualOpen(true)}>
+            <FilePlus2 className="h-3.5 w-3.5" /> 手动同步电影词条
+          </Button>
+          <span className="ml-2 text-xs text-muted-foreground">补录同步时遗漏的影片，可直接参与评选</span>
+        </div>
       </div>
+
+      <ManualSyncDialog open={manualOpen} onClose={() => setManualOpen(false)} />
 
       {list.length === 0 ? (
         <div className="rounded-md border border-dashed py-20 text-center text-muted-foreground">

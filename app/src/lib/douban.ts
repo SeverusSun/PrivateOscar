@@ -199,3 +199,102 @@ export async function fetchCredits(movieId: string): Promise<CreditEntry[]> {
     category: x.category || x.simple_character || '',
   }))
 }
+
+/* ---------- 网页版影片搜索（手动同步用） ---------- */
+
+/** 经 movie.douban.com 代理抓取网页文本（/api/douban-movie） */
+async function fetchMovieText(path: string): Promise<string> {
+  const r = await fetch(`/api/douban-movie${path}`)
+  if (!r.ok) throw new Error(`豆瓣接口返回 ${r.status}`)
+  return r.text()
+}
+
+/** 从 HTML 中提取 window.__DATA__ = {...} 内嵌 JSON（括号配平，兼容字符串转义） */
+function extractWindowData(html: string): any {
+  const marker = 'window.__DATA__ = '
+  const i = html.indexOf(marker)
+  if (i < 0) throw new Error('解析豆瓣搜索页失败')
+  const start = html.indexOf('{', i)
+  let depth = 0
+  let inStr = false
+  let esc = false
+  for (let j = start; j < html.length; j++) {
+    const c = html[j]
+    if (inStr) {
+      if (esc) esc = false
+      else if (c === '\\') esc = true
+      else if (c === '"') inStr = false
+    } else if (c === '"') inStr = true
+    else if (c === '{') depth++
+    else if (c === '}') {
+      depth--
+      if (depth === 0) return JSON.parse(html.slice(start, j + 1))
+    }
+  }
+  throw new Error('解析豆瓣搜索页失败')
+}
+
+/** 豆瓣搜索页的一条影片结果 */
+export interface DoubanSearchResult {
+  id: string
+  title: string
+  year: string
+  poster: string
+  doubanRating: number | null
+  ratingCount: number
+  /** 导演/演员行，用于列表里辅助辨识 */
+  subtitle: string
+}
+
+const SEARCH_PAGE_SIZE = 20
+
+/**
+ * 豆瓣网页版影片搜索（subject_search）：片名、导演名、演员名均可命中。
+ * 返回前 20 条电影词条，滤掉影人条目与占位行。
+ */
+export async function searchDoubanMovies(query: string): Promise<DoubanSearchResult[]> {
+  const q = query.trim()
+  if (!q) return []
+  const html = await fetchMovieText(`/subject_search?search_text=${encodeURIComponent(q)}&cat=1002`)
+  const data = extractWindowData(html)
+  const out: DoubanSearchResult[] = []
+  for (const it of (data.items || []) as any[]) {
+    if (!it || typeof it.id !== 'number' || !it.title || !it.cover_url) continue
+    if (String(it.cover_url).includes('/celebrity/')) continue // 影人条目
+    const rawTitle = String(it.title).replace(/\u200e/g, '').trim()
+    const ym = rawTitle.match(/[(（](\d{4})[)）]\s*$/)
+    out.push({
+      id: String(it.id),
+      title: (ym ? rawTitle.slice(0, ym.index) : rawTitle).trim(),
+      year: ym ? ym[1] : '',
+      poster: String(it.cover_url),
+      doubanRating: typeof it.rating?.value === 'number' ? it.rating.value : null,
+      ratingCount: typeof it.rating?.count === 'number' ? it.rating.count : 0,
+      subtitle: typeof it.abstract_2 === 'string' ? it.abstract_2 : '',
+    })
+    if (out.length >= SEARCH_PAGE_SIZE) break
+  }
+  return out
+}
+
+/** 手动同步：把搜索结果转成影库词条（标记为「看过」，记录时间为当前） */
+export function searchResultToEntry(s: DoubanSearchResult): MovieEntry {
+  return {
+    id: s.id,
+    title: s.title,
+    originalTitle: '',
+    year: s.year,
+    poster: s.poster,
+    intro: '',
+    doubanRating: s.doubanRating,
+    ratingCount: s.ratingCount,
+    genres: [],
+    directors: [],
+    actors: [],
+    status: 'done',
+    markedAt: new Date().toISOString(),
+    userRating: null,
+    shortComment: '',
+    longReview: '',
+  }
+}
