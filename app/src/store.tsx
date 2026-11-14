@@ -253,7 +253,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           'top-custom-subtitle',
           'poster-show-avatar',
           'poster-show-oscar',
+          'poster-name-only',
+          'top-show-medal',
+          'sync-include-tv',
           'library-view-mode',
+          // 三组文字样式（标题/信息/颁奖词）与本机字体列表缓存
+          'poster-grand-text-groups',
+          'poster-list-text-groups',
+          'top-text-groups',
+          'poster-local-font-list',
         ]) {
           localStorage.removeItem(key)
         }
