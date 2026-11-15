@@ -1,0 +1,26 @@
+[Unit]
+Description=Private Oscar Community API
+After=network.target
+
+[Service]
+Type=simple
+User=privateoscar
+Group=privateoscar
+WorkingDirectory=/opt/privateoscar-api
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3100
+Environment=DATABASE_URL=file:/var/lib/privateoscar/db/privateoscar.db
+Environment=UPLOAD_DIR=/var/lib/privateoscar/uploads
+Environment=COOKIE_SECURE=true
+ExecStart=/usr/bin/node /opt/privateoscar-api/dist/server/src/index.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/privateoscar
+
+[Install]
+WantedBy=multi-user.target

@@ -12,6 +12,7 @@ import { resolvePerson, useCreditsLoader } from '@/lib/persons'
 import { embedJpegPictureId } from '@/lib/posterMeta'
 import { createSelectionSnapshot } from '@/lib/selection'
 import { dataUrlToBlob, type ExportDraft } from '@/lib/communityApi'
+import { trackPosterExport } from '@/lib/communityEvents'
 import UploadPosterDialog from '@/components/UploadPosterDialog'
 import oscarUrl from '@/assets/oscar.png'
 import type { AwardDef } from '@/types'
@@ -246,6 +247,7 @@ export default function TopSection() {
         filename,
       })
       setUploadOpen(true)
+      trackPosterExport('top')
       toast.success('榜单已导出')
     } catch (e) {
       console.error(e)

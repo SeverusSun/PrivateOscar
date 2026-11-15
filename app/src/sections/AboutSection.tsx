@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen, Clapperboard, Library, Vote, Trophy, ListOrdered, ShieldCheck, Wrench, Heart, UserRound, ChevronDown, ChevronUp } from 'lucide-react'
+import { BookOpen, Clapperboard, Library, Vote, Trophy, ListOrdered, ShieldCheck, Wrench, Heart, UserRound, UsersRound, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 function CollapsibleCard({
@@ -131,6 +131,12 @@ export default function AboutSection() {
             <b>Top榜</b>：导出「Top N」榜单图片，前三名金银铜色调，导演类别自动匹配导演照片。
           </div>
         </div>
+        <div className="flex gap-3">
+          <UsersRound className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div>
+            <b>人人奥斯卡</b>：主动上传海报、筛选与点赞，查看每个奥斯卡奖项及每个 Top 类别的评选前十名。
+          </div>
+        </div>
       </CollapsibleCard>
 
       <CollapsibleCard
@@ -140,9 +146,11 @@ export default function AboutSection() {
         open={isOpen('privacy')}
         onToggle={toggle}
       >
-        <p>· 本站为纯本地应用：所有数据仅保存在你自己的浏览器本地存储（localStorage）中，不经过任何服务器，不上传、不分享。</p>
+        <p>· 本站默认本地优先：影库、评选进度和海报设置仅保存在浏览器 localStorage，不会自动上传。</p>
+        <p>· 只有在导出后主动点击「将海报上传网站」并确认，用户名、海报、评选结果及颁奖词才会公开到「人人奥斯卡」；豆瓣 UID 不公开展示。</p>
+        <p>· 上传、覆盖、点赞和删除需要网站账号。可在「人人奥斯卡 → 海报展示 → 我的」中删除自己的公开评选。</p>
         <p>· 同步数据来自豆瓣公开接口，仅包含你账户公开的书影音档案信息。</p>
-        <p>· 清除浏览器缓存或点击「同步」页的「清空同步数据」将删除全部本地数据。</p>
+        <p>· 清除浏览器缓存或点击「同步」页的「清空同步数据」将删除本地数据，但不会删除已主动上传的数据。</p>
       </CollapsibleCard>
 
       <CollapsibleCard

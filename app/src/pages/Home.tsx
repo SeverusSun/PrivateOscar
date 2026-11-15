@@ -64,7 +64,7 @@ export default function Home() {
       {tab !== 'sync' && <BackToTop />}
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        数据来源于豆瓣公开接口，仅保存在浏览器本地 · 私人奥斯卡
+        本地数据不会自动上传，主动上传的内容将公开展示 · 私人奥斯卡
       </footer>
     </div>
   )

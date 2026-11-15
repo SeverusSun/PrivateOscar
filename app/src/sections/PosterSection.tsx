@@ -12,6 +12,7 @@ import { resolvePerson, useCreditsLoader } from '@/lib/persons'
 import { embedJpegPictureId } from '@/lib/posterMeta'
 import { createSelectionSnapshot } from '@/lib/selection'
 import { dataUrlToBlob, type ExportDraft } from '@/lib/communityApi'
+import { trackPosterExport } from '@/lib/communityEvents'
 import UploadPosterDialog from '@/components/UploadPosterDialog'
 import oscarUrl from '@/assets/oscar.png'
 import oscarSilhouetteUrl from '@/assets/oscar-silhouette.png'
@@ -407,6 +408,7 @@ export default function PosterSection() {
         filename,
       })
       setUploadOpen(true)
+      trackPosterExport(preview === 'grand' ? 'oscar' : 'nominations')
       toast.success('海报已导出')
     } catch (e) {
       console.error(e)

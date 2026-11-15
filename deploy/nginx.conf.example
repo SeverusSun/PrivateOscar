@@ -1,0 +1,51 @@
+server {
+    listen 80;
+    server_name privateoscar.cn www.privateoscar.cn;
+    root /var/www/privateoscar;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/community/ {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        client_max_body_size 27m;
+    }
+
+    location /api/img/ {
+        proxy_pass https://img1.doubanio.com/;
+        proxy_ssl_server_name on;
+        proxy_set_header Host img1.doubanio.com;
+        proxy_set_header Referer https://www.douban.com/;
+    }
+
+    location /api/douban-www/ {
+        proxy_pass https://www.douban.com/;
+        proxy_ssl_server_name on;
+        proxy_set_header Host www.douban.com;
+        proxy_set_header Referer https://www.douban.com/;
+        proxy_set_header User-Agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36";
+    }
+
+    location /api/douban-movie/ {
+        proxy_pass https://movie.douban.com/;
+        proxy_ssl_server_name on;
+        proxy_set_header Host movie.douban.com;
+        proxy_set_header Referer https://movie.douban.com/;
+        proxy_set_header User-Agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36";
+    }
+
+    location /api/douban/ {
+        proxy_pass https://m.douban.com/rexxar/api/v2/;
+        proxy_ssl_server_name on;
+        proxy_set_header Host m.douban.com;
+        proxy_set_header Referer https://m.douban.com/;
+        proxy_set_header User-Agent "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1";
+    }
+}

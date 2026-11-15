@@ -42,6 +42,7 @@ export default function CommunitySection() {
   const [selected, setSelected] = useState<CommunityPoster | null>(null)
   const [liking, setLiking] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [siteStats, setSiteStats] = useState<{ visitorCount: number; exportCounts: Record<PosterType, number> } | null>(null)
 
   const categoryKey = topCategory === 'custom' ? (customCategory.trim() ? `custom:${encodeURIComponent(customCategory.trim())}` : '') : topCategory
   const load = useCallback(async () => {
@@ -67,6 +68,7 @@ export default function CommunitySection() {
 
   useEffect(() => { void load() }, [load])
   useEffect(() => { if (!user) setMine(false) }, [user])
+  useEffect(() => { communityApi.siteStats().then(setSiteStats).catch(() => setSiteStats(null)) }, [])
 
   function resetPage() { setPage(1) }
 
@@ -110,6 +112,7 @@ export default function CommunitySection() {
         <div>
           <h2 className="flex items-center gap-2 font-serif text-2xl font-bold text-[#1b4332]"><UsersRound className="h-6 w-6" />人人奥斯卡</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">看见彼此的电影选择。只有主动上传的海报和评选才会公开展示。</p>
+          {siteStats && <p className="mt-2 text-xs leading-5 text-muted-foreground">累计访客 {siteStats.visitorCount} · 海报导出 {siteStats.exportCounts.oscar} · 名单导出 {siteStats.exportCounts.nominations} · Top 导出 {siteStats.exportCounts.top}</p>}
         </div>
         <div className="flex items-center gap-3">
           {user ? (

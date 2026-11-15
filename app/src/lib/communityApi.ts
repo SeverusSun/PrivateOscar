@@ -104,6 +104,9 @@ export const communityApi = {
     request<{ ok: true }>(`/selections/${selectionId}`, { method: 'DELETE' }),
   selectionStats: (mode: 'oscars' | 'top') =>
     request<{ mode: 'oscars' | 'top'; groups: SelectionStatsGroup[] }>(`/stats/selections?mode=${mode}`),
+  recordEvent: (event: { eventId: string; eventType: 'visit' | 'export'; posterType?: PosterType; visitorId?: string }) =>
+    request<{ ok: true }>('/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(event) }),
+  siteStats: () => request<{ visitorCount: number; exportCounts: Record<PosterType, number> }>('/stats/site'),
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {

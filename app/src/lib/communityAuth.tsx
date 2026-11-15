@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { communityApi, type CommunityUser } from '@/lib/communityApi'
+import { flushCommunityEvents, trackCommunityVisit } from '@/lib/communityEvents'
 import AuthDialog from '@/components/AuthDialog'
 
 interface Credentials {
@@ -29,6 +30,10 @@ export function CommunityAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     communityApi.me().then((result) => setUser(result.user)).catch(() => setUser(null)).finally(() => setLoading(false))
+    trackCommunityVisit()
+    const flush = () => { void flushCommunityEvents() }
+    window.addEventListener('online', flush)
+    return () => window.removeEventListener('online', flush)
   }, [])
 
   async function authenticate(mode: 'login' | 'register', credentials: Credentials) {
