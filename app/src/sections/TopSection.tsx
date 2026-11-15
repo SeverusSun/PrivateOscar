@@ -9,7 +9,7 @@ import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS,
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
-import { embedJpegMeta } from '@/lib/posterMeta'
+import { embedJpegPictureId } from '@/lib/posterMeta'
 import oscarUrl from '@/assets/oscar.png'
 import type { AwardDef } from '@/types'
 
@@ -225,13 +225,8 @@ export default function TopSection() {
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(img, 0, 0)
-      const dataUrl = embedJpegMeta(canvas.toDataURL('image/jpeg', 0.92), {
-        user: profile?.name ?? '',
-        posterType: 'top',
-        scope: career ? 'career' : String(year),
-        topCategory,
-        yearMode,
-      })
+      const pictureId = globalThis.crypto.randomUUID().replaceAll('-', '')
+      const dataUrl = embedJpegPictureId(canvas.toDataURL('image/jpeg', 0.92), pictureId)
       const a = document.createElement('a')
       a.download = `${defaultTitle}.jpg`
       a.href = dataUrl
