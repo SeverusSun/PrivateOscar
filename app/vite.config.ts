@@ -10,6 +10,10 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/api/community': {
+        target: 'http://127.0.0.1:3100',
+        changeOrigin: true,
+      },
       // 豆瓣图片直连代理（导出海报时避免跨域污染画布）
       '/api/img': {
         target: 'https://img1.doubanio.com',

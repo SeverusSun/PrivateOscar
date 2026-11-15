@@ -5,13 +5,16 @@ import { Toaster } from '@/components/ui/sonner'
 import './index.css'
 import App from './App.tsx'
 import { StoreProvider } from './store.tsx'
+import { CommunityAuthProvider } from '@/lib/communityAuth'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <StoreProvider>
-        <App />
-        <Toaster position="bottom-center" richColors duration={2000} />
+        <CommunityAuthProvider>
+          <App />
+          <Toaster position="bottom-center" richColors duration={2000} />
+        </CommunityAuthProvider>
       </StoreProvider>
     </BrowserRouter>
   </StrictMode>,

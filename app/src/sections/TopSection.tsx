@@ -10,6 +10,9 @@ import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
 import { embedJpegPictureId } from '@/lib/posterMeta'
+import { createSelectionSnapshot } from '@/lib/selection'
+import { dataUrlToBlob, type ExportDraft } from '@/lib/communityApi'
+import UploadPosterDialog from '@/components/UploadPosterDialog'
 import oscarUrl from '@/assets/oscar.png'
 import type { AwardDef } from '@/types'
 
@@ -174,8 +177,11 @@ function TopPoster({ showAvatar, showOscar, medal, customTitle, customSubtitle, 
 }
 
 export default function TopSection() {
-  const { profile, year, yearMode, career, topN, topCategory } = useStore()
+  const store = useStore()
+  const { profile, year, yearMode, career, topN, topCategory, activeAwards } = store
   const [exporting, setExporting] = useState(false)
+  const [uploadDraft, setUploadDraft] = useState<ExportDraft | null>(null)
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
   const [customTitle, setCustomTitle] = useState(() => localStorage.getItem('top-custom-title') ?? '')
   const [customSubtitle, setCustomSubtitle] = useState(() => localStorage.getItem('top-custom-subtitle') ?? '')
@@ -227,10 +233,19 @@ export default function TopSection() {
       ctx.drawImage(img, 0, 0)
       const pictureId = globalThis.crypto.randomUUID().replaceAll('-', '')
       const dataUrl = embedJpegPictureId(canvas.toDataURL('image/jpeg', 0.92), pictureId)
+      const filename = `${defaultTitle}.jpg`
       const a = document.createElement('a')
-      a.download = `${defaultTitle}.jpg`
+      a.download = filename
       a.href = dataUrl
       a.click()
+      setUploadDraft({
+        blob: dataUrlToBlob(dataUrl),
+        selection: profile ? createSelectionSnapshot(store, activeAwards, new Date(), 'top') : null,
+        pictureId,
+        posterType: 'top',
+        filename,
+      })
+      setUploadOpen(true)
       toast.success('榜单已导出')
     } catch (e) {
       console.error(e)
@@ -366,6 +381,7 @@ export default function TopSection() {
         </div>
       </div>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">预览按 {Math.round(scale * 100)}% 自适应缩放显示。当前导出 {ratio}x 清晰度：榜单宽约 {1080 * ratio} px，高度随名次数量变化。</p>
+      <UploadPosterDialog draft={uploadDraft} open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   )
 }

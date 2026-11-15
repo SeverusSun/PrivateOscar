@@ -10,6 +10,9 @@ import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
 import { embedJpegPictureId } from '@/lib/posterMeta'
+import { createSelectionSnapshot } from '@/lib/selection'
+import { dataUrlToBlob, type ExportDraft } from '@/lib/communityApi'
+import UploadPosterDialog from '@/components/UploadPosterDialog'
 import oscarUrl from '@/assets/oscar.png'
 import oscarSilhouetteUrl from '@/assets/oscar-silhouette.png'
 import { TBD_ID } from '@/types'
@@ -321,8 +324,11 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
 }
 
 export default function PosterSection() {
-  const { activeAwards, year, yearMode, career, profile, getResult } = useStore()
+  const store = useStore()
+  const { activeAwards, year, yearMode, career, profile, getResult } = store
   const [exporting, setExporting] = useState<string | null>(null)
+  const [uploadDraft, setUploadDraft] = useState<ExportDraft | null>(null)
+  const [uploadOpen, setUploadOpen] = useState(false)
   const [cols, setCols] = useState<2 | 4 | 6>(4)
   const [ratio, setRatio] = useState<1 | 2 | 3>(2)
   const [preview, setPreview] = useState<'grand' | 'list'>('grand')
@@ -393,6 +399,14 @@ export default function PosterSection() {
       a.download = filename
       a.href = dataUrl
       a.click()
+      setUploadDraft({
+        blob: dataUrlToBlob(dataUrl),
+        selection: profile ? createSelectionSnapshot(store, activeAwards, new Date(), 'oscars') : null,
+        pictureId,
+        posterType: preview === 'grand' ? 'oscar' : 'nominations',
+        filename,
+      })
+      setUploadOpen(true)
       toast.success('海报已导出')
     } catch (e) {
       console.error(e)
@@ -649,6 +663,7 @@ export default function PosterSection() {
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Trophy className="h-3.5 w-3.5 text-[#c9a227]" /> 预览按 {Math.round(scale * 100)}% 自适应缩放显示。当前导出 {ratio}x 清晰度：海报宽约 {grandW * ratio} px，名单海报宽约 {1000 * ratio} px，高度随奖项数量变化。
       </p>
+      <UploadPosterDialog draft={uploadDraft} open={uploadOpen} onOpenChange={setUploadOpen} />
     </div>
   )
 }

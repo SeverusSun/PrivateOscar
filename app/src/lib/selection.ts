@@ -65,6 +65,7 @@ export function createSelectionSnapshot(
   state: AppState,
   activeAwards: AwardDef[],
   now = new Date(),
+  mode: 'oscars' | 'top' = state.awardMode,
 ): SelectionSnapshot {
   if (!state.profile) throw new Error('请先同步豆瓣账户，再生成评选数据')
   const movieById = new Map(state.movies.map((movie) => [movie.id, movie]))
@@ -78,7 +79,7 @@ export function createSelectionSnapshot(
     createdAt: now.toISOString(),
   }
 
-  if (state.awardMode === 'top') {
+  if (mode === 'top') {
     const custom = !Object.hasOwn(TOP_CATEGORY_KEYS, state.topCategory)
     return {
       ...common,

@@ -1,0 +1,99 @@
+import type { PosterType, SelectionSnapshot } from '@/shared/selection'
+
+export interface CommunityUser {
+  id: string
+  username: string
+  displayName: string
+  doubanUid: string | null
+}
+
+export interface UploadConflict {
+  selectionId: string
+  uploadedAt: string
+  likeCount: number
+  posters: { posterType: PosterType; likeCount: number }[]
+}
+
+export interface CommunityPoster {
+  pictureId: string
+  posterType: PosterType
+  imageUrl: string
+  thumbnailUrl: string
+  width: number
+  height: number
+  likeCount: number
+  likedByMe: boolean
+  uploadedAt: string
+  selection: {
+    selectionId: string
+    ownerName: string
+    mode: 'oscars' | 'top'
+    scopeType: 'career' | 'marked' | 'release'
+    scopeYear: number | null
+    topCategoryKey: string | null
+    topCategoryName: string | null
+  }
+}
+
+export interface ExportDraft {
+  blob: Blob
+  selection: SelectionSnapshot | null
+  pictureId: string
+  posterType: PosterType
+  filename: string
+}
+
+export class CommunityApiError extends Error {
+  status: number
+  conflict?: UploadConflict
+
+  constructor(message: string, status: number, conflict?: UploadConflict) {
+    super(message)
+    this.status = status
+    this.conflict = conflict
+  }
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let response: Response
+  try {
+    response = await fetch(`/api/community${path}`, { credentials: 'include', ...init })
+  } catch {
+    throw new CommunityApiError('无法连接社区服务，请确认后端已启动', 0)
+  }
+  const data = await response.json().catch(() => ({})) as { error?: string; conflict?: UploadConflict }
+  if (!response.ok) throw new CommunityApiError(data.error ?? `请求失败（${response.status}）`, response.status, data.conflict)
+  return data as T
+}
+
+export const communityApi = {
+  me: () => request<{ user: CommunityUser | null }>('/auth/me'),
+  login: (body: { username: string; password: string; doubanUid?: string }) =>
+    request<{ user: CommunityUser }>('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  register: (body: { username: string; password: string; displayName: string; doubanUid?: string }) =>
+    request<{ user: CommunityUser }>('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  logout: () => request<{ ok: true }>('/auth/logout', { method: 'POST' }),
+  precheck: (selection: SelectionSnapshot) =>
+    request<{ conflict: UploadConflict | null }>('/selections/precheck', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection),
+    }),
+  upload: async (draft: ExportDraft, conflictMode: 'none' | 'new' | 'overwrite') => {
+    if (!draft.selection) throw new CommunityApiError('缺少评选数据', 400)
+    const form = new FormData()
+    form.append('selection', JSON.stringify(draft.selection))
+    form.append('posterType', draft.posterType)
+    form.append('pictureId', draft.pictureId)
+    form.append('conflictMode', conflictMode)
+    form.append('file', draft.blob, draft.filename)
+    return request<{ poster: CommunityPoster; overwritten: boolean }>('/selections/upload', { method: 'POST', body: form })
+  },
+}
+
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(',')
+  const mime = header.match(/^data:([^;]+)/)?.[1] ?? 'application/octet-stream'
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
