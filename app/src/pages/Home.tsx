@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Clapperboard, Library, Vote, Trophy, ListOrdered, BookOpen } from 'lucide-react'
+import { Clapperboard, Library, Vote, Trophy, ListOrdered, BookOpen, UsersRound } from 'lucide-react'
 import SyncSection from '@/sections/SyncSection'
 import LibrarySection from '@/sections/LibrarySection'
 import AwardsSection from '@/sections/AwardsSection'
 import PosterSection from '@/sections/PosterSection'
 import TopSection from '@/sections/TopSection'
+import CommunitySection from '@/sections/CommunitySection'
 import AboutSection from '@/sections/AboutSection'
 import BackToTop from '@/components/BackToTop'
 
@@ -14,6 +15,7 @@ const TABS: { id: string; label: string; icon: typeof Clapperboard }[] = [
   { id: 'awards', label: '评选', icon: Vote },
   { id: 'poster', label: '奥斯卡', icon: Trophy },
   { id: 'top', label: 'Top榜', icon: ListOrdered },
+  { id: 'community', label: '人人奥斯卡', icon: UsersRound },
   { id: 'about', label: '关于', icon: BookOpen },
 ]
 
@@ -54,6 +56,7 @@ export default function Home() {
         {tab === 'awards' && <AwardsSection />}
         {tab === 'poster' && <PosterSection />}
         {tab === 'top' && <TopSection />}
+        {tab === 'community' && <CommunitySection />}
         {tab === 'about' && <AboutSection />}
       </main>
 

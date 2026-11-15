@@ -87,6 +87,15 @@ export const communityApi = {
     form.append('file', draft.blob, draft.filename)
     return request<{ poster: CommunityPoster; overwritten: boolean }>('/selections/upload', { method: 'POST', body: form })
   },
+  posters: (query: Record<string, string | number | undefined>) => {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== '') params.set(key, String(value))
+    return request<{ items: CommunityPoster[]; total: number; page: number; pageSize: number; requiresAuth: boolean }>(`/posters?${params}`)
+  },
+  like: (pictureId: string, liked: boolean) =>
+    request<{ liked: boolean; likeCount: number }>(`/posters/${pictureId}/like`, { method: liked ? 'DELETE' : 'POST' }),
+  deleteSelection: (selectionId: string) =>
+    request<{ ok: true }>(`/selections/${selectionId}`, { method: 'DELETE' }),
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {
