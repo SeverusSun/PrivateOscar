@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useCommunityAuth } from '@/lib/communityAuth'
+import { useCommunityAuth } from '@/lib/communityAuthContext'
 import { useStore } from '@/store'
 
 export default function AuthDialog() {

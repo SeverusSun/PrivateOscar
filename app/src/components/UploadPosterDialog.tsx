@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { communityApi, CommunityApiError, type ExportDraft, type UploadConflict } from '@/lib/communityApi'
-import { useCommunityAuth } from '@/lib/communityAuth'
+import { useCommunityAuth } from '@/lib/communityAuthContext'
 
 interface Props {
   draft: ExportDraft | null
