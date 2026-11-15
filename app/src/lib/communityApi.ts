@@ -35,6 +35,12 @@ export interface CommunityPoster {
   }
 }
 
+export interface SelectionStatsGroup {
+  id: string
+  name: string
+  entries: { movieId: string; title: string; personName: string | null; count: number }[]
+}
+
 export interface ExportDraft {
   blob: Blob
   selection: SelectionSnapshot | null
@@ -96,6 +102,8 @@ export const communityApi = {
     request<{ liked: boolean; likeCount: number }>(`/posters/${pictureId}/like`, { method: liked ? 'DELETE' : 'POST' }),
   deleteSelection: (selectionId: string) =>
     request<{ ok: true }>(`/selections/${selectionId}`, { method: 'DELETE' }),
+  selectionStats: (mode: 'oscars' | 'top') =>
+    request<{ mode: 'oscars' | 'top'; groups: SelectionStatsGroup[] }>(`/stats/selections?mode=${mode}`),
 }
 
 export function dataUrlToBlob(dataUrl: string): Blob {

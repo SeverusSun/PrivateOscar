@@ -9,14 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { communityApi, type CommunityPoster } from '@/lib/communityApi'
 import { useCommunityAuth } from '@/lib/communityAuth'
+import CommunityRankings from '@/components/CommunityRankings'
+import { TOP_CATEGORIES } from '@/data/topCategories'
 import type { PosterType } from '@/shared/selection'
-
-const TOP_CATEGORIES = [
-  ['best', '最佳'], ['favorite', '最爱'], ['director', '导演'], ['actor', '男演'], ['actress', '女演'],
-  ['science-fiction', '科幻'], ['drama', '剧情'], ['romance', '爱情'], ['family', '家庭'], ['thriller', '惊悚'],
-  ['fantasy', '奇幻'], ['comedy', '喜剧'], ['history', '历史'], ['war', '战争'], ['musical', '歌舞'],
-  ['lgbtq', '同性'], ['animation', '动画'],
-] as const
 
 const selectClass = 'h-9 min-w-0 rounded-md border bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
@@ -31,6 +26,7 @@ function posterTypeLabel(type: PosterType): string {
 
 export default function CommunitySection() {
   const { user, loading: authLoading, openAuth, logout } = useCommunityAuth()
+  const [view, setView] = useState<'posters' | 'rankings'>('posters')
   const [posterType, setPosterType] = useState('')
   const [scope, setScope] = useState('')
   const [topCategory, setTopCategory] = useState('')
@@ -127,6 +123,12 @@ export default function CommunitySection() {
         </div>
       </section>
 
+      <nav className="flex gap-1 border-b" aria-label="人人奥斯卡子页面">
+        <button className={`min-h-11 cursor-pointer border-b-2 px-4 text-sm font-medium transition ${view === 'posters' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`} onClick={() => setView('posters')} aria-pressed={view === 'posters'}>海报展示</button>
+        <button className={`min-h-11 cursor-pointer border-b-2 px-4 text-sm font-medium transition ${view === 'rankings' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`} onClick={() => { setSelected(null); setView('rankings') }} aria-pressed={view === 'rankings'}>众人所评</button>
+      </nav>
+
+      <div className={view === 'posters' ? 'contents' : 'hidden'}>
       <section aria-label="海报筛选" className="space-y-4 rounded-md border bg-card p-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="space-y-1.5">
@@ -237,6 +239,8 @@ export default function CommunitySection() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
+      {view === 'rankings' && <CommunityRankings />}
     </div>
   )
 }
