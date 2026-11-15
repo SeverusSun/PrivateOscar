@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  username     String      @unique
+  passwordHash String
+  displayName  String
+  doubanUid    String?     @unique
+  createdAt    DateTime    @default(now())
+  sessions     Session[]
+  selections   Selection[]
+  likes        Like[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Selection {
+  id              String          @id @default(uuid())
+  selectionId     String          @unique
+  logicalKey      String
+  ownerId         String
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerUid        String
+  ownerName       String
+  mode            String
+  scopeType       String
+  scopeYear       Int?
+  topCategoryKey  String?
+  topCategoryName String?
+  payloadJson     String
+  contentHash     String
+  createdAt       DateTime
+  uploadedAt      DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  posters         Poster[]
+  items           SelectionItem[]
+
+  @@index([ownerId, logicalKey, uploadedAt])
+  @@index([mode, scopeType, scopeYear, topCategoryKey])
+}
+
+model SelectionItem {
+  id             String    @id @default(uuid())
+  selectionId    String
+  selection      Selection @relation(fields: [selectionId], references: [id], onDelete: Cascade)
+  awardId        String?
+  awardName      String?
+  awardKind      String?
+  required       Boolean?
+  topCategoryKey String?
+  entryType      String
+  rank           Int?
+  movieId        String
+  movieTitle     String
+  personName     String?
+
+  @@index([entryType, awardId, movieId, personName])
+  @@index([entryType, topCategoryKey, movieId, personName])
+}
+
+model Poster {
+  id          String    @id @default(uuid())
+  pictureId   String    @unique
+  selectionId String
+  selection   Selection @relation(fields: [selectionId], references: [id], onDelete: Cascade)
+  posterType  String
+  fileName    String    @unique
+  thumbName   String    @unique
+  width       Int
+  height      Int
+  sizeBytes   Int
+  likeCount   Int       @default(0)
+  uploadedAt  DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  likes       Like[]
+
+  @@index([posterType, likeCount, uploadedAt])
+  @@unique([selectionId, posterType])
+}
+
+model Like {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  posterId  String
+  poster    Poster   @relation(fields: [posterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, posterId])
+  @@index([posterId])
+}
+
+model SiteEvent {
+  id         String   @id @default(uuid())
+  eventId    String   @unique
+  eventType  String
+  posterType String?
+  visitorId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([eventType, posterType])
+  @@index([eventType, visitorId])
+}
