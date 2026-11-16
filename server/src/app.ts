@@ -36,6 +36,7 @@ const posterQuerySchema = z.object({
   posterType: posterTypeSchema.optional(),
   scope: z.enum(['marked', 'release']).optional(),
   topCategoryKey: z.string().max(300).optional(),
+  owner: z.string().trim().min(1).max(100).optional(),
   mine: z.enum(['1']).optional(),
   sort: z.enum(['likes', 'uploaded-asc', 'uploaded-desc']).default('uploaded-desc'),
   page: z.coerce.number().int().min(1).default(1),
@@ -357,9 +358,12 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (query.mine && !user) return { items: [], total: 0, page: query.page, pageSize: query.pageSize, requiresAuth: true }
     const where: Prisma.PosterWhereInput = {
       ...(query.posterType ? { posterType: query.posterType } : {}),
-      ...(query.topCategoryKey ? { selection: { topCategoryKey: query.topCategoryKey } } : {}),
-      ...(query.scope ? { selection: { scopeType: query.scope === 'marked' ? { in: ['marked', 'career'] } : 'release' } } : {}),
-      ...(query.mine ? { selection: { ownerId: user!.id } } : {}),
+      selection: {
+        ...(query.topCategoryKey ? { topCategoryKey: query.topCategoryKey } : {}),
+        ...(query.scope ? { scopeType: query.scope === 'marked' ? { in: ['marked', 'career'] } : 'release' } : {}),
+        ...(query.mine ? { ownerId: user!.id } : {}),
+        ...(query.owner ? { OR: [{ ownerUid: query.owner }, { ownerName: { contains: query.owner } }] } : {}),
+      },
     }
     const orderBy: Prisma.PosterOrderByWithRelationInput[] = query.sort === 'likes'
       ? [{ likeCount: 'desc' }, { uploadedAt: 'desc' }]

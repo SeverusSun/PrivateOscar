@@ -124,6 +124,21 @@ describe('社区 API', () => {
     expect(posters.json().total).toBe(2)
   })
 
+  it('支持豆瓣 UID 精确检索和显示名模糊搜索，且不公开 UID', async () => {
+    const cookie = await register()
+    expect((await upload(cookie, oscarSelection())).response.statusCode).toBe(201)
+
+    const byUid = await app.inject({ url: '/api/community/posters?owner=232857659' })
+    expect(byUid.json().total).toBe(1)
+    expect(byUid.body).not.toContain('ownerUid')
+    const byName = await app.inject({ url: `/api/community/posters?owner=${encodeURIComponent('秋菊')}` })
+    expect(byName.json().total).toBe(1)
+    const byPartialUid = await app.inject({ url: '/api/community/posters?owner=23285765' })
+    expect(byPartialUid.json().total).toBe(0)
+    const missing = await app.inject({ url: `/api/community/posters?owner=${encodeURIComponent('不存在的用户')}` })
+    expect(missing.json().total).toBe(0)
+  })
+
   it('拒绝以其他豆瓣 UID 上传', async () => {
     const cookie = await register('another-uid')
     const result = await upload(cookie, oscarSelection())

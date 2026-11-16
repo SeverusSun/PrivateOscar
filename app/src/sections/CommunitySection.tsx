@@ -32,6 +32,8 @@ export default function CommunitySection() {
   const [scope, setScope] = useState('')
   const [topCategory, setTopCategory] = useState('')
   const [customCategory, setCustomCategory] = useState('')
+  const [ownerInput, setOwnerInput] = useState('')
+  const [ownerQuery, setOwnerQuery] = useState('')
   const [mine, setMine] = useState(false)
   const [sort, setSort] = useState('uploaded-desc')
   const [page, setPage] = useState(1)
@@ -54,6 +56,7 @@ export default function CommunitySection() {
         posterType: posterType || undefined,
         scope: scope || undefined,
         topCategoryKey: posterType === 'top' ? categoryKey || undefined : undefined,
+        owner: ownerQuery || undefined,
         mine: mine ? '1' : undefined,
         sort, page, pageSize: 12,
       })
@@ -65,7 +68,7 @@ export default function CommunitySection() {
     } finally {
       setLoading(false)
     }
-  }, [posterType, scope, categoryKey, mine, sort, page])
+  }, [posterType, scope, categoryKey, ownerQuery, mine, sort, page])
 
   useEffect(() => { void load() }, [load])
   useEffect(() => { if (!user) setMine(false) }, [user])
@@ -125,48 +128,58 @@ export default function CommunitySection() {
 
       <div className={view === 'posters' ? 'contents' : 'hidden'}>
       <section aria-label="海报筛选" className="space-y-4 rounded-md border bg-card p-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="community-poster-type">照片类别</Label>
-            <select id="community-poster-type" className={`${selectClass} w-full`} value={posterType} onChange={(event) => { setPosterType(event.target.value); setTopCategory(''); resetPage() }}>
-              <option value="">全部类别</option><option value="oscar">奥斯卡海报</option><option value="nominations">奥斯卡提名名单</option><option value="top">Top 榜</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="community-scope">评选范围</Label>
-            <select id="community-scope" className={`${selectClass} w-full`} value={scope} onChange={(event) => { setScope(event.target.value); resetPage() }}>
-              <option value="">全部范围</option><option value="marked">标记年份（含生涯）</option><option value="release">上映年份</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="community-sort">排序方式</Label>
-            <select id="community-sort" className={`${selectClass} w-full`} value={sort} onChange={(event) => { setSort(event.target.value); resetPage() }}>
-              <option value="uploaded-desc">上传时间倒序</option><option value="uploaded-asc">上传时间正序</option><option value="likes">点赞量</option>
-            </select>
-          </div>
-          <div className="flex items-end gap-2 pb-2">
-            <Switch id="community-mine" checked={mine} onCheckedChange={(checked) => { if (checked && !user) { openAuth(); return }; setMine(checked); resetPage() }} />
-            <Label htmlFor="community-mine" className="cursor-pointer">我的上传</Label>
-          </div>
-        </div>
-        {posterType === 'top' && (
-          <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="community-top-category">Top 类别</Label>
-              <select id="community-top-category" className={`${selectClass} w-full`} value={topCategory} onChange={(event) => { setTopCategory(event.target.value); resetPage() }}>
-                <option value="">全部 Top 类别</option>
-                {TOP_CATEGORIES.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
-                <option value="custom">自定义类别</option>
+              <Label htmlFor="community-poster-type">照片类别</Label>
+              <select id="community-poster-type" className={`${selectClass} w-full`} value={posterType} onChange={(event) => { setPosterType(event.target.value); setTopCategory(''); resetPage() }}>
+                <option value="">全部类别</option><option value="oscar">奥斯卡海报</option><option value="nominations">奥斯卡提名名单</option><option value="top">Top 榜</option>
               </select>
             </div>
-            {topCategory === 'custom' && (
-              <div className="space-y-1.5">
-                <Label htmlFor="community-custom-category">自定义类别名称</Label>
-                <Input id="community-custom-category" value={customCategory} onChange={(event) => { setCustomCategory(event.target.value); resetPage() }} placeholder="输入上传时使用的完整类别名" />
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="community-scope">评选范围</Label>
+              <select id="community-scope" className={`${selectClass} w-full`} value={scope} onChange={(event) => { setScope(event.target.value); resetPage() }}>
+                <option value="">全部范围</option><option value="marked">标记年份（含生涯）</option><option value="release">上映年份</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="community-sort">排序方式</Label>
+              <select id="community-sort" className={`${selectClass} w-full`} value={sort} onChange={(event) => { setSort(event.target.value); resetPage() }}>
+                <option value="uploaded-desc">上传时间倒序</option><option value="uploaded-asc">上传时间正序</option><option value="likes">点赞量</option>
+              </select>
+            </div>
           </div>
-        )}
+          {posterType === 'top' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="community-top-category">Top 类别</Label>
+                <select id="community-top-category" className={`${selectClass} w-full`} value={topCategory} onChange={(event) => { setTopCategory(event.target.value); resetPage() }}>
+                  <option value="">全部 Top 类别</option>
+                  {TOP_CATEGORIES.map(([key, name]) => <option key={key} value={key}>{name}</option>)}
+                  <option value="custom">自定义类别</option>
+                </select>
+              </div>
+              {topCategory === 'custom' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="community-custom-category">自定义类别名称</Label>
+                  <Input id="community-custom-category" value={customCategory} onChange={(event) => { setCustomCategory(event.target.value); resetPage() }} placeholder="输入上传时使用的完整类别名" />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <form className="space-y-1.5" onSubmit={(event) => { event.preventDefault(); setOwnerQuery(ownerInput.trim()); resetPage() }}>
+          <Label htmlFor="community-owner-search">豆瓣用户 UID / 显示名</Label>
+          <div className="flex gap-2">
+            <Input id="community-owner-search" className="min-w-0 flex-1" value={ownerInput} onChange={(event) => setOwnerInput(event.target.value)} placeholder="UID 精确检索，或输入部分显示名" maxLength={100} />
+            <Button type="submit" variant="secondary" className="shrink-0">搜索</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">UID 需完整匹配；显示名支持模糊搜索。清空内容后点击搜索可显示全部用户。</p>
+        </form>
+        <div className="flex min-h-9 items-center gap-2 border-t pt-3">
+          <Switch id="community-mine" checked={mine} onCheckedChange={(checked) => { if (checked && !user) { openAuth(); return }; setMine(checked); resetPage() }} />
+          <Label htmlFor="community-mine" className="cursor-pointer">我的上传</Label>
+        </div>
       </section>
 
       {loading ? (
