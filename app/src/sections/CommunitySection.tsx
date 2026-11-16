@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Copy, Download, Heart, Loader2, LogOut, UsersRound } from 'lucide-react'
+import { Copy, Download, Heart, Loader2, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { communityApi, type CommunityPoster } from '@/lib/communityApi'
 import { useCommunityAuth } from '@/lib/communityAuthContext'
 import CommunityRankings from '@/components/CommunityRankings'
+import CommunityAccountControls from '@/components/CommunityAccountControls'
 import { TOP_CATEGORIES } from '@/data/topCategories'
 import type { PosterType } from '@/shared/selection'
 
@@ -25,7 +26,7 @@ function posterTypeLabel(type: PosterType): string {
 }
 
 export default function CommunitySection() {
-  const { user, loading: authLoading, openAuth, logout } = useCommunityAuth()
+  const { user, openAuth } = useCommunityAuth()
   const [view, setView] = useState<'posters' | 'rankings'>('posters')
   const [posterType, setPosterType] = useState('')
   const [scope, setScope] = useState('')
@@ -114,16 +115,7 @@ export default function CommunitySection() {
           <p className="mt-2 text-sm leading-6 text-muted-foreground">看见彼此的电影选择。只有主动上传的海报和评选才会公开展示。</p>
           {siteStats && <p className="mt-2 text-xs leading-5 text-muted-foreground">累计访客 {siteStats.visitorCount} · 海报导出 {siteStats.exportCounts.oscar} · 名单导出 {siteStats.exportCounts.nominations} · Top 导出 {siteStats.exportCounts.top}</p>}
         </div>
-        <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <span className="text-sm font-medium">{user.displayName}</span>
-              <Button variant="outline" size="sm" onClick={() => void logout()}><LogOut className="mr-1.5 h-4 w-4" />退出</Button>
-            </>
-          ) : (
-            <Button variant="outline" size="sm" onClick={openAuth} disabled={authLoading}>登录社区账号</Button>
-          )}
-        </div>
+        <CommunityAccountControls />
       </section>
 
       <nav className="flex gap-1 border-b" aria-label="人人奥斯卡子页面">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { RefreshCw, Clapperboard, Link2, UserRound, Trash2 } from 'lucide-react'
+import { RefreshCw, Clapperboard, Link2, UserRound, Trash2, UsersRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { fetchUser, parseUid, syncMovies, type SyncProgress } from '@/lib/douban'
+import CommunityAccountControls from '@/components/CommunityAccountControls'
 
 export default function SyncSection() {
   const { profile, movies, setProfile, setMovies, resetAll } = useStore()
@@ -45,6 +46,24 @@ export default function SyncSection() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <Card className="border-primary/25 bg-primary/[0.03]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <UsersRound className="h-5 w-5" /> 社区账号（可选）
+          </CardTitle>
+          <CardDescription>
+            仅用于「人人奥斯卡」的上传、覆盖、点赞和删除自己的评选。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm leading-6">
+          <CommunityAccountControls />
+          <div className="space-y-1 text-muted-foreground">
+            <p>社区账号是本网站的独立账号，不是豆瓣登录，也不会获取你的豆瓣密码。绑定豆瓣 UID 只用于确认上传归属和检测重复评选。</p>
+            <p className="font-medium text-foreground">不登录社区账号，不影响豆瓣同步、私人评选和海报导出。</p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
