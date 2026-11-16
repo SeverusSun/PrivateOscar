@@ -189,11 +189,20 @@ export default function CommunitySection() {
       ) : posters.length === 0 ? (
         <div className="rounded-md border border-dashed p-12 text-center text-sm text-muted-foreground">暂时没有符合条件的海报。导出海报后，可主动上传到人人奥斯卡。</div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
           {posters.map((poster) => (
-            <article key={poster.pictureId} className="overflow-hidden rounded-md border bg-card">
+            <article key={poster.pictureId} className="mb-4 break-inside-avoid overflow-hidden rounded-md border bg-card">
               <button className="block w-full cursor-zoom-in bg-[#e5e5dd]" onClick={() => setSelected(poster)} aria-label={`查看${posterTypeLabel(poster.posterType)}原图`}>
-                <img src={poster.thumbnailUrl} alt={`${poster.selection.ownerName}的${posterTypeLabel(poster.posterType)}`} loading="lazy" className="aspect-[3/4] w-full object-contain" />
+                <img
+                  src={poster.thumbnailUrl}
+                  alt={`${poster.selection.ownerName}的${posterTypeLabel(poster.posterType)}`}
+                  width={poster.width}
+                  height={poster.height}
+                  loading="lazy"
+                  decoding="async"
+                  sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  className="h-auto w-full object-cover"
+                />
               </button>
               <div className="space-y-3 p-3">
                 <div>
