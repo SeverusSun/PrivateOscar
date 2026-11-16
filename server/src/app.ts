@@ -130,9 +130,13 @@ async function removeFiles(...names: string[]): Promise<void> {
   await Promise.all(names.map((name) => unlink(path.join(config.uploadDir, name)).catch(() => undefined)))
 }
 
-async function existingSelection(userId: string, selection: SelectionSnapshot) {
+async function existingSelection(userId: string, selection: SelectionSnapshot, posterType?: string) {
   return prisma.selection.findFirst({
-    where: { ownerId: userId, logicalKey: selectionLogicalKey(selection) },
+    where: {
+      ownerId: userId,
+      logicalKey: selectionLogicalKey(selection),
+      ...(posterType ? { posters: { some: { posterType } } } : {}),
+    },
     orderBy: { uploadedAt: 'desc' },
     include: { posters: true },
   })
@@ -201,26 +205,34 @@ async function uploadSelection(request: any, reply: FastifyReply) {
     .toFile(path.join(config.uploadDir, thumbName))
   await sharp(buffer, { limitInputPixels: 80_000_000 }).toFile(path.join(config.uploadDir, fileName))
 
-  const existing = await existingSelection(user.id, selection)
   const conflictMode = field('conflictMode') || 'none'
-  if (existing && conflictMode === 'none') {
-    await removeFiles(fileName, thumbName)
-    return reply.code(409).send({ error: '已有同类型评选', conflict: conflictPayload(existing) })
-  }
   if (!['none', 'new', 'overwrite'].includes(conflictMode)) {
     await removeFiles(fileName, thumbName)
     return reply.code(400).send({ error: '无效的上传冲突处理方式' })
   }
+  const latestExisting = await existingSelection(user.id, selection)
+  const conflictingExisting = await existingSelection(user.id, selection, posterType)
+  if (conflictingExisting && conflictMode === 'none') {
+    await removeFiles(fileName, thumbName)
+    return reply.code(409).send({ error: '已有同类型评选和图片类型', conflict: conflictPayload(conflictingExisting) })
+  }
+  if (conflictMode === 'overwrite' && !conflictingExisting) {
+    await removeFiles(fileName, thumbName)
+    return reply.code(400).send({ error: '当前图片类型没有可覆盖的旧海报，请重新检测' })
+  }
+  const existing = conflictMode === 'new' ? null : conflictMode === 'overwrite' ? conflictingExisting : latestExisting
 
   const contentHash = createHash('sha256').update(JSON.stringify(selection)).digest('hex')
   const oldFiles: string[] = []
   try {
     const poster = await prisma.$transaction(async (tx) => {
       let internalSelectionId: string
-      if (existing && conflictMode === 'overwrite') {
+      if (existing) {
         internalSelectionId = existing.id
-        await tx.like.deleteMany({ where: { poster: { selectionId: existing.id } } })
-        await tx.poster.updateMany({ where: { selectionId: existing.id }, data: { likeCount: 0 } })
+        if (conflictMode === 'overwrite') {
+          await tx.like.deleteMany({ where: { poster: { selectionId: existing.id } } })
+          await tx.poster.updateMany({ where: { selectionId: existing.id }, data: { likeCount: 0 } })
+        }
         const replaced = await tx.poster.findUnique({
           where: { selectionId_posterType: { selectionId: existing.id, posterType } },
         })
@@ -332,12 +344,13 @@ export async function buildApp(): Promise<FastifyInstance> {
   })
 
   app.post('/api/community/selections/precheck', { preHandler: requireAuth }, async (request, reply) => {
-    const selection = parse(selectionSnapshotSchema, request.body)
+    const body = parse(z.object({ selection: selectionSnapshotSchema, posterType: posterTypeSchema }), request.body)
+    const { selection, posterType } = body
     const user = request.communityUser!
     if (!user.doubanUid || user.doubanUid !== selection.owner.uid) {
       return reply.code(403).send({ error: '当前评选 UID 与网站账号绑定的豆瓣 UID 不一致' })
     }
-    return { conflict: conflictPayload(await existingSelection(user.id, selection)) }
+    return { conflict: conflictPayload(await existingSelection(user.id, selection, posterType)) }
   })
 
   app.post('/api/community/selections/upload', { preHandler: requireAuth }, uploadSelection)

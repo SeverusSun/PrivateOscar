@@ -79,9 +79,9 @@ export const communityApi = {
   register: (body: { username: string; password: string; displayName: string; doubanUid?: string }) =>
     request<{ user: CommunityUser }>('/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   logout: () => request<{ ok: true }>('/auth/logout', { method: 'POST' }),
-  precheck: (selection: SelectionSnapshot) =>
+  precheck: (selection: SelectionSnapshot, posterType: PosterType) =>
     request<{ conflict: UploadConflict | null }>('/selections/precheck', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ selection, posterType }),
     }),
   upload: async (draft: ExportDraft, conflictMode: 'none' | 'new' | 'overwrite') => {
     if (!draft.selection) throw new CommunityApiError('缺少评选数据', 400)

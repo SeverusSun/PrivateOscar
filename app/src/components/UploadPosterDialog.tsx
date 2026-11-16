@@ -45,7 +45,7 @@ export default function UploadPosterDialog({ draft, open, onOpenChange }: Props)
     if (!draft?.selection) { toast.error('请先在「同步」页同步豆瓣账户，再上传评选'); return }
     setBusy(true)
     try {
-      const result = await communityApi.precheck(draft.selection)
+      const result = await communityApi.precheck(draft.selection, draft.posterType)
       if (result.conflict) setConflict(result.conflict)
       else await performUpload('none')
     } catch (cause) {
@@ -71,6 +71,13 @@ export default function UploadPosterDialog({ draft, open, onOpenChange }: Props)
               <p className="truncate font-medium">{draft.filename}</p>
               <p className="mt-1 text-muted-foreground">{user ? `上传账号：${user.displayName}` : '上传前需要登录社区账号'}</p>
             </div>
+          </div>
+        )}
+        {draft && !done && (
+          <div className="space-y-1.5 rounded-md border bg-muted/20 p-3 text-xs leading-5 text-muted-foreground">
+            <p className="font-medium text-foreground">“检测已有同类型评选”检测机制</p>
+            <p>按绑定豆瓣 UID、评选模式、评选范围、Top 类别（仅 Top 榜）和本次图片类型共同检测。</p>
+            <p>奥斯卡海报与提名名单分别检测：只上传过海报，不会阻止首次补充上传名单；补充图片会归入同一份评选，并保留其他图片的点赞。</p>
           </div>
         )}
         {conflict && (

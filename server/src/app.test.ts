@@ -97,7 +97,7 @@ describe('社区 API', () => {
   it('上传、重复检测、点赞与覆盖清零形成完整闭环', async () => {
     const owner = await register()
     const selection = oscarSelection()
-    const precheck = await app.inject({ method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner }, payload: selection })
+    const precheck = await app.inject({ method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner }, payload: { selection, posterType: 'oscar' } })
     expect(precheck.json()).toEqual({ conflict: null })
 
     const first = await upload(owner, selection)
@@ -108,7 +108,7 @@ describe('社区 API', () => {
       expect(liked.json()).toEqual({ liked: true, likeCount: 1 })
     }
 
-    const conflict = await app.inject({ method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner }, payload: oscarSelection() })
+    const conflict = await app.inject({ method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner }, payload: { selection: oscarSelection(), posterType: 'oscar' } })
     expect(conflict.json().conflict.likeCount).toBe(1)
 
     const replacedSelection = oscarSelection()
@@ -122,6 +122,37 @@ describe('社区 API', () => {
     expect(unique.response.statusCode).toBe(201)
     const posters = await app.inject({ url: '/api/community/posters?posterType=oscar&scope=marked&sort=likes' })
     expect(posters.json().total).toBe(2)
+  })
+
+  it('按图片类型检测重复，允许补充提名名单并保留原海报点赞', async () => {
+    const owner = await register()
+    const first = await upload(owner, oscarSelection(), 'oscar')
+    expect(first.response.statusCode).toBe(201)
+    const other = await register('other-uid')
+    await app.inject({ method: 'POST', url: `/api/community/posters/${first.pictureId}/like`, headers: { cookie: other } })
+
+    const nominationsSelection = oscarSelection()
+    const nominationsPrecheck = await app.inject({
+      method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner },
+      payload: { selection: nominationsSelection, posterType: 'nominations' },
+    })
+    expect(nominationsPrecheck.json()).toEqual({ conflict: null })
+    const oscarPrecheck = await app.inject({
+      method: 'POST', url: '/api/community/selections/precheck', headers: { cookie: owner },
+      payload: { selection: oscarSelection(), posterType: 'oscar' },
+    })
+    expect(oscarPrecheck.json().conflict).not.toBeNull()
+
+    const nominations = await upload(owner, nominationsSelection, 'nominations')
+    expect(nominations.response.statusCode).toBe(201)
+    expect(nominations.response.json().poster.selection.selectionId).toBe(nominationsSelection.selectionId)
+    expect(await prisma.selection.count()).toBe(1)
+    const posters = await app.inject({ url: '/api/community/posters?sort=uploaded-asc' })
+    expect(posters.json().total).toBe(2)
+    expect(posters.json().items.find((poster: { pictureId: string }) => poster.pictureId === first.pictureId).likeCount).toBe(1)
+
+    const repeated = await upload(owner, oscarSelection(), 'nominations')
+    expect(repeated.response.statusCode).toBe(409)
   })
 
   it('支持豆瓣 UID 精确检索和显示名模糊搜索，且不公开 UID', async () => {
