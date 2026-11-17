@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { BookOpen, Clapperboard, Library, Vote, Trophy, ListOrdered, ShieldCheck, Wrench, Heart, UserRound, UsersRound, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import SupportAuthorDialog from '@/components/SupportAuthorDialog'
 
 function CollapsibleCard({
   id,
@@ -44,6 +46,7 @@ function CollapsibleCard({
 
 export default function AboutSection() {
   const [openIds, setOpenIds] = useState<Set<string>>(new Set())
+  const [supportOpen, setSupportOpen] = useState(false)
   const toggle = (id: string) =>
     setOpenIds((prev) => {
       const next = new Set(prev)
@@ -88,10 +91,13 @@ export default function AboutSection() {
           </a>
         </p>
         <p>看的电影还不算多，但是真的很喜欢电影呀，欢迎大家交流！</p>
-        <p>支持作者：</p>
         <div className="flex justify-center">
-          <img src="/reward-qrcode.png" alt="打赏二维码" className="mt-1 w-60 rounded-md border" />
+          <Button variant="outline" className="min-h-11" onClick={() => setSupportOpen(true)}>
+            <Heart className="mr-2 h-4 w-4" />
+            支持作者
+          </Button>
         </div>
+        <SupportAuthorDialog open={supportOpen} onOpenChange={setSupportOpen} />
       </CollapsibleCard>
 
       <CollapsibleCard
