@@ -384,7 +384,14 @@ export default function TopSection() {
       </div>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">预览按 {Math.round(scale * 100)}% 自适应缩放显示。当前导出 {ratio}x 清晰度：榜单宽约 {1080 * ratio} px，高度随名次数量变化。</p>
       <ExportSuccessDialog open={exportSuccessOpen} onOpenChange={setExportSuccessOpen} onUpload={() => setUploadOpen(true)} />
-      <UploadPosterDialog draft={uploadDraft} open={uploadOpen} onOpenChange={setUploadOpen} />
+      <UploadPosterDialog
+        draft={uploadDraft}
+        open={uploadOpen}
+        onOpenChange={(open) => {
+          setUploadOpen(open)
+          if (!open) setExportSuccessOpen(true)
+        }}
+      />
     </div>
   )
 }

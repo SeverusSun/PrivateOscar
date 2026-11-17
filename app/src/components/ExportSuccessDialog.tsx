@@ -93,7 +93,13 @@ export default function ExportSuccessDialog({ open, onOpenChange, onUpload }: Pr
           </div>
         </DialogContent>
       </Dialog>
-      <SupportAuthorDialog open={supportOpen} onOpenChange={setSupportOpen} />
+      <SupportAuthorDialog
+        open={supportOpen}
+        onOpenChange={(next) => {
+          setSupportOpen(next)
+          if (!next) onOpenChange(true)
+        }}
+      />
     </>
   )
 }

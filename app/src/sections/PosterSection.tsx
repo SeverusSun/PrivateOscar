@@ -676,7 +676,14 @@ export default function PosterSection() {
         <Trophy className="h-3.5 w-3.5 text-[#c9a227]" /> 预览按 {Math.round(scale * 100)}% 自适应缩放显示。当前导出 {ratio}x 清晰度：海报宽约 {grandW * ratio} px，名单海报宽约 {1000 * ratio} px，高度随奖项数量变化。
       </p>
       <ExportSuccessDialog open={exportSuccessOpen} onOpenChange={setExportSuccessOpen} onUpload={() => setUploadOpen(true)} />
-      <UploadPosterDialog draft={uploadDraft} open={uploadOpen} onOpenChange={setUploadOpen} />
+      <UploadPosterDialog
+        draft={uploadDraft}
+        open={uploadOpen}
+        onOpenChange={(open) => {
+          setUploadOpen(open)
+          if (!open) setExportSuccessOpen(true)
+        }}
+      />
     </div>
   )
 }
