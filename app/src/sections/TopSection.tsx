@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { LocalFontLoaderButton, loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -315,13 +315,11 @@ export default function TopSection() {
           </div>
           <span className="text-xs text-muted-foreground">榜单宽度 {1080 * ratio} px（高度随名次数量变化）</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+        {/* 三组文字样式：行间无分隔线；与导出清晰度/榜单标题行用分隔线分开。本机字体按钮统一一个、置于最前 */}
+        <div className="space-y-2 border-t pt-3">
+          <LocalFontLoaderButton />
           <TextStyleControls label="标题/副标题" value={textGroups.title} onChange={(v) => updateGroups('title', v)} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <TextStyleControls label="奖项名/电影信息" value={textGroups.info} onChange={(v) => updateGroups('info', v)} />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <TextStyleControls label="颁奖词" value={textGroups.citation} onChange={(v) => updateGroups('citation', v)} />
         </div>
         <div className="flex flex-wrap items-center gap-2 border-t pt-3">

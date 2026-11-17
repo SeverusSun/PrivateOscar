@@ -32,3 +32,8 @@ pnpm-debug.log*
 
 # Local-only docs (never push)
 开发者实现参考.md
+
+# Local-only deploy script (contains server address)
+deploy.sh
+deploy.bat
+NewFeature.txt

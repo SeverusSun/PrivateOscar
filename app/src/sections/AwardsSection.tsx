@@ -970,6 +970,30 @@ export default function AwardsSection() {
     return Array.from(set).sort((a, b) => b - a)
   }, [movies, yearMode])
 
+  /** 「评选好啦」：还有未评选项则定位到第一个（奥斯卡=无获奖且无提名的奖项，Top=空名次），全部完成则跳转到对应海报界面 */
+  function handleFinish() {
+    if (awardMode === 'top') {
+      const missing = Array.from({ length: topN }, (_, i) => i + 1).find((r) => !topPicks[String(r)])
+      if (missing) {
+        jumpToAward(`top-${missing}`)
+        toast.info(`还有 Top ${missing} 未评选，已为你定位`)
+      } else {
+        window.dispatchEvent(new CustomEvent('po:navigate', { detail: 'top' }))
+      }
+      return
+    }
+    const next = activeAwards.find((a) => {
+      const r = getResult(a.id)
+      return !r.winner && !r.winnerTbd && !r.nominations.some((n) => n.movieId === TBD_ID)
+    })
+    if (next) {
+      jumpToAward(next.id)
+      toast.info(`「${next.name}」还未评选，已为你定位`)
+    } else {
+      window.dispatchEvent(new CustomEvent('po:navigate', { detail: 'poster' }))
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="rounded-md border bg-card p-4">
@@ -1006,10 +1030,17 @@ export default function AwardsSection() {
                   : '年度模式：除「最期待」外，各奖项从该年度「看过」影片中评选'}
           </span>
         </div>
+        {/* 评选范围：标记年份 / 上映年份 / 光影生涯 三者并列（光影生涯不再包含在标记年份内） */}
         <div className="flex w-fit items-center gap-1 rounded-md border p-0.5 text-sm">
           <button
-            className={`rounded px-3 py-1 transition ${yearMode === 'marked' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-            onClick={() => yearMode !== 'marked' && requestScope('mode-marked', () => setYearMode('marked'))}
+            className={`rounded px-3 py-1 transition ${yearMode === 'marked' && !career ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            onClick={() =>
+              (yearMode !== 'marked' || career) &&
+              requestScope('mode-marked', () => {
+                setCareer(false)
+                setYearMode('marked')
+              })
+            }
           >
             标记年份
           </button>
@@ -1019,26 +1050,24 @@ export default function AwardsSection() {
           >
             上映年份
           </button>
+          <button
+            className={`rounded px-3 py-1 transition ${career ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            onClick={() => !career && requestScope('career', () => setCareer(true))}
+          >
+            光影生涯
+          </button>
         </div>
-        {/* 具体年份：标记年份用徽标按钮（含光影生涯），上映年份用下拉列表 */}
-        <div className="mt-2 flex flex-wrap gap-2">
+        {/* 具体年份：标记年份用徽标按钮；上映年份用下拉列表；光影生涯无需选年份，整行隐藏 */}
+        <div className={career ? 'hidden' : 'mt-2 flex flex-wrap gap-2'}>
           {yearMode === 'marked' ? (
             <>
-              <Badge
-                variant={career ? 'default' : 'outline'}
-                className="cursor-pointer px-3 py-1.5 text-sm"
-                onClick={() => !career && requestScope('career', () => setCareer(true))}
-              >
-                光影生涯
-              </Badge>
               {years.map((y) => (
                 <Badge
                   key={y}
-                  variant={!career && year === y ? 'default' : 'outline'}
+                  variant={year === y ? 'default' : 'outline'}
                   className="cursor-pointer px-3 py-1.5 text-sm"
                   onClick={() =>
                     requestScope(`year-${y}`, () => {
-                      setCareer(false)
                       setYear(y)
                     })
                   }
@@ -1525,6 +1554,12 @@ export default function AwardsSection() {
       </div>
       </>
       )}
+      {/* 底部：评选好啦——未评完定位到第一个未评项，全部评完跳转海报/榜单界面 */}
+      <div className="flex justify-center pt-2">
+        <Button size="lg" className="px-10" onClick={handleFinish}>
+          评选好啦
+        </Button>
+      </div>
     </div>
   )
 }

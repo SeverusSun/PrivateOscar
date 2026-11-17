@@ -46,20 +46,22 @@ export default function SyncSection() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <Card className="border-primary/25 bg-primary/[0.03]">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
-            <UsersRound className="h-5 w-5" /> 社区账号（可选）
+            <UsersRound className="h-5 w-5" /> 社区账号
           </CardTitle>
-          <CardDescription>
-            仅用于「人人奥斯卡」的上传、覆盖、点赞和删除自己的评选。
-          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm leading-6">
-          <CommunityAccountControls />
-          <div className="space-y-1 text-muted-foreground">
-            <p>社区账号是本网站的独立账号，不是豆瓣登录，也不会获取你的豆瓣密码。绑定豆瓣 UID 只用于确认上传归属和检测重复评选。</p>
-            <p className="font-medium text-foreground">不登录社区账号，不影响豆瓣同步、私人评选和海报导出。</p>
+        <CardContent className="space-y-4">
+          {/* 登录按钮独立一行，居中于标题下方 */}
+          <div className="flex justify-center">
+            <CommunityAccountControls />
+          </div>
+          {/* 三条澄清：小圆点无序列表，浅灰色 */}
+          <div className="space-y-1 text-sm leading-6 text-muted-foreground">
+            <p>· 仅用于「人人奥斯卡」的上传、覆盖、点赞和删除自己的评选。</p>
+            <p>· 社区账号是本网站的独立账号，不是豆瓣登录，也不会获取你的豆瓣密码。绑定豆瓣 UID 只用于确认上传归属和检测重复评选。</p>
+            <p>· 不登录社区账号，不影响豆瓣同步、私人评选和海报导出。</p>
           </div>
         </CardContent>
       </Card>
@@ -121,25 +123,26 @@ export default function SyncSection() {
         </CardContent>
       </Card>
 
-      {profile && (
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <Avatar className="h-14 w-14">
-              <AvatarImage src={proxiedImage(profile.avatar)} referrerPolicy="no-referrer" />
-              <AvatarFallback>
-                <UserRound className="h-6 w-6" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-1">
-              <div className="text-lg font-bold">{profile.name}</div>
-              <div className="text-sm text-muted-foreground">
-                书影音档案共 {movies.length} 部 · 看过 {doneCount} · 在看 {doingCount} · 想看 {wishCount}
-              </div>
+      {/* 豆瓣账户卡：未同步时也显示占位（头像空白、待同步、0 部、清空按钮禁用） */}
+      <Card>
+        <CardContent className="flex items-center gap-4 pt-6">
+          <Avatar className="h-14 w-14">
+            {profile && <AvatarImage src={proxiedImage(profile.avatar)} referrerPolicy="no-referrer" />}
+            <AvatarFallback>
+              <UserRound className="h-6 w-6" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 space-y-1">
+            <div className="text-lg font-bold">{profile?.name ?? '待同步'}</div>
+            <div className="text-sm text-muted-foreground">
+              书影音档案共 {movies.length} 部 · 看过 {doneCount} · 在看 {doingCount} · 想看 {wishCount}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className={confirmReset ? 'border-destructive text-destructive hover:text-destructive' : 'shrink-0 text-muted-foreground hover:text-destructive'}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!profile}
+            className={confirmReset ? 'border-destructive text-destructive hover:text-destructive' : 'shrink-0 text-muted-foreground hover:text-destructive'}
               onClick={() => {
                 if (confirmReset) {
                   resetAll()
@@ -155,7 +158,6 @@ export default function SyncSection() {
             </Button>
           </CardContent>
         </Card>
-      )}
     </div>
   )
 }

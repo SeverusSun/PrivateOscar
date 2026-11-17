@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import TextStyleControls, { loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
+import TextStyleControls, { LocalFontLoaderButton, loadTextGroups, saveTextGroups, DEFAULT_TEXT_GROUPS, groupStyleRules, type PosterTextGroups, type PosterTextStyle } from '@/components/TextStyleControls'
 import { useStore } from '@/store'
 import { proxiedImage } from '@/lib/storage'
 import { resolvePerson, useCreditsLoader } from '@/lib/persons'
@@ -60,6 +60,13 @@ function StarRow({ value, size = 14, emptyOutline = false }: { value: number | n
 
 /** 名单行：👑/空 独立成列，片名 / 导演 / 豆瓣评分 / 用户星级；directorAward 时不重复显示影片导演 */
 function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { movie: MovieEntry; person?: string; color: string; winner?: boolean; directorAward?: boolean; scale?: number }) {
+  // 110% 及以下：豆瓣评分与星级独立成右列右对齐；更大字号空间过窄，保持行内连排
+  const rightAlign = scale <= 1.1
+  const ratingPart = (
+    <>
+      豆瓣 {movie.doubanRating?.toFixed(1) ?? '—'}　<StarRow value={movie.userRating ?? null} size={Math.round(13 * scale)} emptyOutline />
+    </>
+  )
   return (
     <div className="pt-info flex items-baseline" style={{ color, fontSize: Math.round(14 * scale) }}>
       <span className="mr-1.5 inline-block w-4 shrink-0 text-center">{winner ? '👑' : ''}</span>
@@ -68,9 +75,12 @@ function ListLine({ movie, person, color, winner, directorAward, scale = 1 }: { 
           {person ? `${person} ` : ''}
           {movie.title}
         </span>
-        {!directorAward && movie.directors.length ? `　${movie.directors.map((d) => d.name).join(' / ')}` : ''}　豆瓣 {movie.doubanRating?.toFixed(1) ?? '—'}　
-        <StarRow value={movie.userRating ?? null} size={Math.round(13 * scale)} emptyOutline />
+        {!directorAward && movie.directors.length ? `　${movie.directors.map((d) => d.name).join(' / ')}` : ''}
+        {rightAlign ? null : <>　{ratingPart}</>}
       </span>
+      {rightAlign && (
+        <span className="ml-auto flex shrink-0 items-baseline gap-1 whitespace-nowrap pl-2">{ratingPart}</span>
+      )}
     </div>
   )
 }
@@ -279,7 +289,7 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
           // 颁奖词：文本输入 > 电影短评 > 奖项说明；都没有则不显示
           const citation = !pendingWinner && winner ? (r.citation?.trim() || winner.shortComment.trim() || a.description.trim()) : ''
           return (
-            <div key={a.id} className="flex items-start gap-4 border-b border-dashed border-[#d8d8cc] pb-3">
+            <div key={a.id} className="flex items-center gap-4 border-b border-dashed border-[#d8d8cc] pb-3">
               <div className="pt-info w-40 shrink-0 pt-0.5 text-right font-bold" style={{ color: GOLD, fontFamily: AWARD_FONT, fontSize: fsi(20) }}>
                 {a.name}
               </div>
@@ -308,8 +318,8 @@ function ListPoster({ awards, showAvatar, showOscar, customTitle, customSubtitle
                   return <ListLine key={n.movieId} movie={m} person={name} color={INK_GREEN} directorAward={directorAward} scale={gi.scale} />
                 })}
               </div>
-              {/* 右侧空白：颁奖词（右缘大致对齐报头用户头像的中线） */}
-              <div className="pt-citation mr-10 w-72 shrink-0 pt-0.5 text-right italic leading-relaxed text-[#6b7280]" style={{ fontSize: fsc(12) }}>
+              {/* 右侧空白：颁奖词（右缘大致对齐报头用户头像的中线；整行 items-center 使其上下居中） */}
+              <div className="pt-citation mr-10 w-72 shrink-0 text-right italic leading-relaxed text-[#6b7280]" style={{ fontSize: fsc(12) }}>
                 {citation ? `“${citation}”` : ''}
               </div>
             </div>
@@ -529,33 +539,31 @@ export default function PosterSection() {
             {preview === 'grand' ? `海报宽度 ${grandW * ratio} px` : `名单宽度 ${1000 * ratio} px`}（高度随奖项数量变化）
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+        {/* 三组文字样式：行间无分隔线；与导出清晰度行用分隔线分开。本机字体按钮统一一个、置于最前 */}
+        <div className="space-y-2 border-t pt-3">
+          <LocalFontLoaderButton />
           <TextStyleControls
             label="标题/副标题"
             value={(preview === 'grand' ? grandGroups : listGroups).title}
             onChange={(v) => updateGroups('title', v)}
           />
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <TextStyleControls
             label="奖项名/电影信息"
             value={(preview === 'grand' ? grandGroups : listGroups).info}
             onChange={(v) => updateGroups('info', v)}
           />
+          {/* 主海报没有颁奖词，仅完整名单显示颁奖词控制行 */}
+          {preview === 'list' && (
+            <TextStyleControls
+              label="颁奖词"
+              value={listGroups.citation}
+              onChange={(v) => updateGroups('citation', v)}
+            />
+          )}
         </div>
-        {/* 主海报没有颁奖词，仅完整名单显示颁奖词控制行 */}
-        {preview === 'list' && (
-        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-          <TextStyleControls
-            label="颁奖词"
-            value={listGroups.citation}
-            onChange={(v) => updateGroups('citation', v)}
-          />
-        </div>
-        )}
-        {/* 预览海报时：只显示海报的标题/副标题输入 */}
+        {/* 预览海报时：只显示海报的标题/副标题输入；与三组文字样式用分隔线分开 */}
         {preview === 'grand' && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <span className="w-16 shrink-0 text-sm font-bold">海报标题</span>
           <Input
             className="max-w-md"
@@ -574,9 +582,9 @@ export default function PosterSection() {
           </Button>
         </div>
         )}
-        {/* 预览完整名单时：只显示名单的标题/副标题输入 */}
+        {/* 预览完整名单时：只显示名单的标题/副标题输入；与三组文字样式用分隔线分开 */}
         {preview === 'list' && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
           <span className="w-16 shrink-0 text-sm font-bold">名单标题</span>
           <Input
             className="max-w-md"

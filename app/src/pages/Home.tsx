@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Clapperboard, Library, Vote, Trophy, ListOrdered, BookOpen, UsersRound } from 'lucide-react'
 import SyncSection from '@/sections/SyncSection'
 import LibrarySection from '@/sections/LibrarySection'
@@ -23,6 +23,13 @@ type TabId = string
 
 export default function Home() {
   const [tab, setTab] = useState<TabId>('sync')
+
+  // 评选页「评选好啦」等界面通过自定义事件跳转导航（无需把 tab 状态提升进全局仓库）
+  useEffect(() => {
+    const onNavigate = (e: Event) => setTab((e as CustomEvent<TabId>).detail)
+    window.addEventListener('po:navigate', onNavigate)
+    return () => window.removeEventListener('po:navigate', onNavigate)
+  }, [])
 
   return (
     <div className="min-h-screen">

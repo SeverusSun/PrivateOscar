@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -58,7 +58,45 @@ async function querySystemFonts(): Promise<string[]> {
   return [...set].sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
 }
 
-/** 海报文字三组样式：标题/副标题、奖项名/电影信息、颁奖词 */
+/** 加载本机字体并广播更新：所有文字样式控制行监听该事件刷新字体下拉 */
+async function loadLocalFonts(): Promise<string[]> {
+  const families = await querySystemFonts()
+  localStorage.setItem(LOCAL_FONTS_KEY, JSON.stringify(families))
+  window.dispatchEvent(new Event('po:local-fonts'))
+  return families
+}
+
+/** 统一的「加载全部本机字体」按钮：每个海报界面只在三行文字样式最前放这一个 */
+export function LocalFontLoaderButton() {
+  const [loadedCount, setLoadedCount] = useState(() => readCachedLocalFonts().length)
+  const [loading, setLoading] = useState(false)
+
+  async function onLoad() {
+    setLoading(true)
+    try {
+      const families = await loadLocalFonts()
+      setLoadedCount(families.length)
+      toast.success(`已读取 ${families.length} 个本机字体`)
+    } catch {
+      toast.error('无法读取本机字体：当前浏览器不支持或已取消授权')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onLoad}
+      disabled={loading}
+      title="通过浏览器读取 Windows 本机安装的全部字体（首次需授权），读取结果会缓存"
+    >
+      {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+      {loadedCount > 0 ? '重新读取本机字体' : '加载全部本机字体'}
+    </Button>
+  )
+}
 export interface PosterTextGroups {
   title: PosterTextStyle
   info: PosterTextStyle
@@ -121,21 +159,12 @@ export function saveTextGroups(keyPrefix: string, g: PosterTextGroups) {
 export default function TextStyleControls({ label, value, onChange }: { label: string; value: PosterTextStyle; onChange: (v: PosterTextStyle) => void }) {
   const customized = value.color !== '' || value.scale !== 1 || value.font !== ''
   const [localFonts, setLocalFonts] = useState<string[]>(readCachedLocalFonts)
-  const [loadingFonts, setLoadingFonts] = useState(false)
-
-  async function loadAllFonts() {
-    setLoadingFonts(true)
-    try {
-      const families = await querySystemFonts()
-      setLocalFonts(families)
-      localStorage.setItem(LOCAL_FONTS_KEY, JSON.stringify(families))
-      toast.success(`已读取 ${families.length} 个本机字体`)
-    } catch {
-      toast.error('无法读取本机字体：当前浏览器不支持或已取消授权')
-    } finally {
-      setLoadingFonts(false)
-    }
-  }
+  // 统一的加载按钮加载完字体后广播事件，本行下拉随之刷新
+  useEffect(() => {
+    const onFonts = () => setLocalFonts(readCachedLocalFonts())
+    window.addEventListener('po:local-fonts', onFonts)
+    return () => window.removeEventListener('po:local-fonts', onFonts)
+  }, [])
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -184,16 +213,6 @@ export default function TextStyleControls({ label, value, onChange }: { label: s
           </optgroup>
         )}
       </select>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={loadAllFonts}
-        disabled={loadingFonts}
-        title="通过浏览器读取 Windows 本机安装的全部字体（首次需授权），读取结果会缓存"
-      >
-        {loadingFonts ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
-        {localFonts.length > 0 ? '重新读取本机字体' : '加载全部本机字体'}
-      </Button>
       {customized && (
         <Button variant="outline" size="sm" onClick={() => onChange({ color: '', scale: 1, font: '' })}>
           恢复默认
