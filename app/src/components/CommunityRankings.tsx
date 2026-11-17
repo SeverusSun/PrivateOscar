@@ -2,10 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Medal, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { communityApi, type SelectionStatsGroup } from '@/lib/communityApi'
+import { useStore } from '@/store'
 import { AWARDS } from '@/data/awards'
 import { TOP_CATEGORIES } from '@/data/topCategories'
 
 export default function CommunityRankings() {
+  const { movies } = useStore()
   const [mode, setMode] = useState<'oscars' | 'top'>('oscars')
   const [groups, setGroups] = useState<SelectionStatsGroup[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,19 +28,31 @@ export default function CommunityRankings() {
   useEffect(() => { void load() }, [load])
 
   const orderedGroups = useMemo(() => {
-    const byId = new Map(groups.map((group) => [group.id, group]))
+    const localById = new Map(movies.map((movie) => [movie.id, movie]))
+    const enrichedGroups = groups.map((group) => ({
+      ...group,
+      entries: group.entries.map((entry) => {
+        const local = localById.get(entry.movieId)
+        return {
+          ...entry,
+          directors: entry.directors || local?.directors.map((director) => director.name).join(' / ') || '',
+          doubanRating: entry.doubanRating ?? local?.doubanRating ?? null,
+        }
+      }),
+    }))
+    const byId = new Map(enrichedGroups.map((group) => [group.id, group]))
     if (mode === 'oscars') {
       const builtIn = AWARDS.map((award) => ({
-        id: award.id, name: award.name, required: award.required,
+        id: award.id, name: award.name, description: award.description, required: award.required,
         entries: byId.get(award.id)?.entries ?? [],
       }))
-      const custom = groups.filter((group) => !AWARDS.some((award) => award.id === group.id)).map((group) => ({ ...group, required: false }))
+      const custom = enrichedGroups.filter((group) => !AWARDS.some((award) => award.id === group.id)).map((group) => ({ ...group, description: '', required: false }))
       return [...builtIn, ...custom]
     }
-    const builtIn = TOP_CATEGORIES.map(([id, name]) => ({ id, name, required: false, entries: byId.get(id)?.entries ?? [] }))
-    const custom = groups.filter((group) => !TOP_CATEGORIES.some(([id]) => id === group.id)).map((group) => ({ ...group, required: false }))
+    const builtIn = TOP_CATEGORIES.map(([id, name]) => ({ id, name, description: '', required: false, entries: byId.get(id)?.entries ?? [] }))
+    const custom = enrichedGroups.filter((group) => !TOP_CATEGORIES.some(([id]) => id === group.id)).map((group) => ({ ...group, description: '', required: false }))
     return [...builtIn, ...custom]
-  }, [groups, mode])
+  }, [groups, mode, movies])
 
   return (
     <section className="space-y-5">
@@ -59,19 +73,29 @@ export default function CommunityRankings() {
       ) : (
         <div className="grid items-start gap-4 lg:grid-cols-2">
           {orderedGroups.map((group) => (
-            <article key={group.id} className="rounded-md border bg-card">
-              <header className="flex items-center justify-between border-b px-4 py-3">
-                <h4 className="font-bold">{group.name}</h4>
-                <span className="text-xs text-muted-foreground">{mode === 'oscars' ? (group.required ? '传统奖项' : '可选 / 自定义') : 'Top 类别'} · Top 10</span>
+            <article key={group.id} className="min-w-0 rounded-md border bg-card">
+              <header className="flex items-center gap-2 border-b px-4 py-3">
+                <h4 className="shrink-0 font-bold">{group.name}</h4>
+                {group.description && (
+                  <span className="hidden min-w-0 truncate text-xs text-muted-foreground md:inline" title={group.description}>· {group.description}</span>
+                )}
               </header>
               {group.entries.length ? (
                 <ol className="divide-y">
                   {group.entries.map((entry, index) => (
                     <li key={`${entry.movieId}-${entry.personName ?? ''}`} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <span className={`w-6 text-center font-serif font-bold ${index < 3 ? 'text-[#9b7b12]' : 'text-muted-foreground'}`}>{index + 1}</span>
-                      <span className="min-w-0 flex-1 truncate" title={entry.personName ? `${entry.personName} · ${entry.title}` : entry.title}>
-                        {entry.personName && <span className="font-medium">{entry.personName} · </span>}{entry.title}
-                      </span>
+                      <span className={`w-6 shrink-0 text-center font-serif font-bold ${index < 3 ? 'text-[#9b7b12]' : 'text-muted-foreground'}`}>{index + 1}</span>
+                      <div className="flex min-w-0 flex-1 items-baseline gap-2">
+                        <p className="min-w-0 flex-1 truncate" title={entry.personName ? `${entry.personName} · ${entry.title}` : entry.title}>
+                          {entry.personName && <span className="font-medium">{entry.personName} · </span>}{entry.title}
+                        </p>
+                        <span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground" title={`导演 ${entry.directors || '—'}`}>
+                          导演 {entry.directors || '—'}
+                        </span>
+                        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                          豆瓣 <b className="font-semibold text-[#e09015]">{entry.doubanRating?.toFixed(1) ?? '—'}</b>
+                        </span>
+                      </div>
                       <span className="shrink-0 font-mono text-xs text-[#1b4332]">{entry.count} 次</span>
                     </li>
                   ))}

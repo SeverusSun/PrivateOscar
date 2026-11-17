@@ -35,6 +35,7 @@ describe('评选快照协议', () => {
       awardId: 'best-director', status: 'decided', winnerMovieId: movie.id,
       citation: '梦境杰作', nominations: [{ person: { name: '今敏' } }],
     })
+    expect(snapshot.awards[0].nominations[0].movie.doubanRating).toBe(9.1)
     expect(selectionSnapshotSchema.parse(snapshot)).toEqual(snapshot)
   })
 

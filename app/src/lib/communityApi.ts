@@ -38,7 +38,14 @@ export interface CommunityPoster {
 export interface SelectionStatsGroup {
   id: string
   name: string
-  entries: { movieId: string; title: string; personName: string | null; count: number }[]
+  entries: {
+    movieId: string
+    title: string
+    directors: string
+    doubanRating: number | null
+    personName: string | null
+    count: number
+  }[]
 }
 
 export interface ExportDraft {
@@ -98,6 +105,8 @@ export const communityApi = {
     for (const [key, value] of Object.entries(query)) if (value !== undefined && value !== '') params.set(key, String(value))
     return request<{ items: CommunityPoster[]; total: number; page: number; pageSize: number; requiresAuth: boolean }>(`/posters?${params}`)
   },
+  posterYears: (scope: 'marked' | 'release') =>
+    request<{ years: number[] }>(`/posters/years?scope=${scope}`),
   like: (pictureId: string, liked: boolean) =>
     request<{ liked: boolean; likeCount: number }>(`/posters/${pictureId}/like`, { method: liked ? 'DELETE' : 'POST' }),
   deleteSelection: (selectionId: string) =>

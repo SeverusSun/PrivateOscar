@@ -33,6 +33,7 @@ function movieSnapshot(movie: MovieEntry): MovieSnapshot {
     title: movie.title,
     originalTitle: movie.originalTitle || undefined,
     year: movie.year || undefined,
+    doubanRating: movie.doubanRating,
     poster: movie.poster || undefined,
     directors: movie.directors.map(({ id, name }) => ({ id, name })),
     actors: movie.actors.map(({ id, name }) => ({ id, name })),

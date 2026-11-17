@@ -15,6 +15,7 @@ export const movieSnapshotSchema = z.object({
   title: z.string().trim().min(1).max(300),
   originalTitle: z.string().max(300).optional(),
   year: z.string().max(20).optional(),
+  doubanRating: z.number().min(0).max(10).nullable().optional(),
   poster: z.string().optional(),
   directors: z.array(z.object({ id: z.string(), name: z.string() })).max(50),
   actors: z.array(z.object({ id: z.string(), name: z.string() })).max(100),

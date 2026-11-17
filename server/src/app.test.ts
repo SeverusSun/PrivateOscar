@@ -42,7 +42,8 @@ async function register(doubanUid = '232857659'): Promise<string> {
 
 function movie(id: string, title = '红辣椒') {
   return {
-    movieId: id, title, year: '2006', directors: [{ id: 'director', name: '今敏' }], actors: [],
+    movieId: id, title, year: '2006', doubanRating: 9.1,
+    directors: [{ id: 'director', name: '今敏' }], actors: [],
   }
 }
 
@@ -176,6 +177,29 @@ describe('社区 API', () => {
     expect(result.response.statusCode).toBe(403)
   })
 
+  it('光影生涯独立筛选，年份选项按范围返回且默认按点赞排序', async () => {
+    const cookie = await register()
+    expect((await upload(cookie, oscarSelection())).response.statusCode).toBe(201)
+    const career = await upload(cookie, { ...oscarSelection(), scope: { type: 'career', year: null } })
+    expect(career.response.statusCode).toBe(201)
+    expect((await upload(cookie, { ...oscarSelection(), scope: { type: 'release', year: 2006 } })).response.statusCode).toBe(201)
+
+    const markedYears = await app.inject({ url: '/api/community/posters/years?scope=marked' })
+    const releaseYears = await app.inject({ url: '/api/community/posters/years?scope=release' })
+    expect(markedYears.json()).toEqual({ years: [2026] })
+    expect(releaseYears.json()).toEqual({ years: [2006] })
+    const careerOnly = await app.inject({ url: '/api/community/posters?scope=career' })
+    expect(careerOnly.json().total).toBe(1)
+    expect(careerOnly.json().items[0].selection.scopeType).toBe('career')
+    const wrongYear = await app.inject({ url: '/api/community/posters?scope=marked&scopeYear=2006' })
+    expect(wrongYear.json().total).toBe(0)
+
+    const other = await register('other-uid')
+    await app.inject({ method: 'POST', url: `/api/community/posters/${career.pictureId}/like`, headers: { cookie: other } })
+    const defaultSort = await app.inject({ url: '/api/community/posters' })
+    expect(defaultSort.json().items[0].pictureId).toBe(career.pictureId)
+  })
+
   it('奥斯卡人物与各 Top 类别分别统计，并只返回前十名', async () => {
     const cookie = await register()
     expect((await upload(cookie, oscarSelection())).response.statusCode).toBe(201)
@@ -185,7 +209,7 @@ describe('社区 API', () => {
     expect((await upload(cookie, topSelection('favorite-1', 'favorite', '最爱'), 'top', 'new')).response.statusCode).toBe(201)
 
     const oscars = await app.inject({ url: '/api/community/stats/selections?mode=oscars' })
-    expect(oscars.json().groups[0].entries[0]).toMatchObject({ title: '红辣椒', personName: '今敏', count: 1 })
+    expect(oscars.json().groups[0].entries[0]).toMatchObject({ title: '红辣椒', directors: '今敏', doubanRating: 9.1, personName: '今敏', count: 1 })
     const top = await app.inject({ url: '/api/community/stats/selections?mode=top' })
     const best = top.json().groups.find((group: { id: string }) => group.id === 'best')
     const favorite = top.json().groups.find((group: { id: string }) => group.id === 'favorite')

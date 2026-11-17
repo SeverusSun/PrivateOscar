@@ -34,14 +34,16 @@ const eventSchema = z.object({
 })
 const posterQuerySchema = z.object({
   posterType: posterTypeSchema.optional(),
-  scope: z.enum(['marked', 'release']).optional(),
+  scope: z.enum(['career', 'marked', 'release']).optional(),
+  scopeYear: z.coerce.number().int().min(1800).max(9999).optional(),
   topCategoryKey: z.string().max(300).optional(),
   owner: z.string().trim().min(1).max(100).optional(),
   mine: z.enum(['1']).optional(),
-  sort: z.enum(['likes', 'uploaded-asc', 'uploaded-desc']).default('uploaded-desc'),
+  sort: z.enum(['likes', 'uploaded-asc', 'uploaded-desc']).default('likes'),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(48).default(12),
 })
+const posterYearsQuerySchema = z.object({ scope: z.enum(['marked', 'release']) })
 const statsQuerySchema = z.object({ mode: z.enum(['oscars', 'top']) })
 
 type PosterWithSelection = Prisma.PosterGetPayload<{ include: { selection: true } }>
@@ -52,6 +54,8 @@ type AggregateRow = {
   topCategoryName: string | null
   movieId: string
   movieTitle: string
+  movieDirectors: string | null
+  doubanRating: number | null
   personName: string | null
   count: number | bigint
 }
@@ -85,6 +89,8 @@ function selectionItems(selection: SelectionSnapshot) {
       rank: pick.rank,
       movieId: pick.movie.movieId,
       movieTitle: pick.movie.title,
+      movieDirectors: pick.movie.directors.map((director) => director.name).join(' / ') || null,
+      doubanRating: pick.movie.doubanRating ?? null,
       personName: pick.person?.name ?? null,
     }))
   }
@@ -98,6 +104,8 @@ function selectionItems(selection: SelectionSnapshot) {
       required: award.required,
       movieId: winner.movie.movieId,
       movieTitle: winner.movie.title,
+      movieDirectors: winner.movie.directors.map((director) => director.name).join(' / ') || null,
+      doubanRating: winner.movie.doubanRating ?? null,
       personName: winner.person?.name ?? null,
     }
   })
@@ -365,6 +373,17 @@ export async function buildApp(): Promise<FastifyInstance> {
     return { ok: true }
   })
 
+  app.get('/api/community/posters/years', async (request) => {
+    const { scope } = parse(posterYearsQuerySchema, request.query)
+    const rows = await prisma.selection.findMany({
+      where: { scopeType: scope, scopeYear: { not: null }, posters: { some: {} } },
+      select: { scopeYear: true },
+      distinct: ['scopeYear'],
+      orderBy: { scopeYear: 'desc' },
+    })
+    return { years: rows.flatMap((row) => row.scopeYear === null ? [] : [row.scopeYear]) }
+  })
+
   app.get('/api/community/posters', async (request) => {
     const query = parse(posterQuerySchema, request.query)
     const user = query.mine ? await currentUser(request) : null
@@ -373,7 +392,8 @@ export async function buildApp(): Promise<FastifyInstance> {
       ...(query.posterType ? { posterType: query.posterType } : {}),
       selection: {
         ...(query.topCategoryKey ? { topCategoryKey: query.topCategoryKey } : {}),
-        ...(query.scope ? { scopeType: query.scope === 'marked' ? { in: ['marked', 'career'] } : 'release' } : {}),
+        ...(query.scope ? { scopeType: query.scope } : {}),
+        ...(query.scopeYear ? { scopeYear: query.scopeYear } : {}),
         ...(query.mine ? { ownerId: user!.id } : {}),
         ...(query.owner ? { OR: [{ ownerUid: query.owner }, { ownerName: { contains: query.owner } }] } : {}),
       },
@@ -431,7 +451,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     const entryType = mode === 'oscars' ? 'winner' : 'top'
     const rows = await prisma.$queryRaw<AggregateRow[]>`
       SELECT si.awardId, si.awardName, si.topCategoryKey, s.topCategoryName,
-             si.movieId, si.movieTitle, si.personName, COUNT(*) AS count
+             si.movieId, si.movieTitle, MAX(si.movieDirectors) AS movieDirectors,
+             MAX(si.doubanRating) AS doubanRating, si.personName, COUNT(*) AS count
       FROM SelectionItem AS si
       JOIN Selection AS s ON s.id = si.selectionId
       WHERE si.entryType = ${entryType}
@@ -441,14 +462,26 @@ export async function buildApp(): Promise<FastifyInstance> {
     const groups = new Map<string, {
       id: string
       name: string
-      entries: { movieId: string; title: string; personName: string | null; count: number }[]
+      entries: {
+        movieId: string
+        title: string
+        directors: string
+        doubanRating: number | null
+        personName: string | null
+        count: number
+      }[]
     }>()
     for (const row of rows) {
       const id = mode === 'oscars' ? row.awardId! : row.topCategoryKey!
       const name = mode === 'oscars' ? row.awardName! : row.topCategoryName!
       if (!groups.has(id)) groups.set(id, { id, name, entries: [] })
       groups.get(id)!.entries.push({
-        movieId: row.movieId, title: row.movieTitle, personName: row.personName, count: Number(row.count),
+        movieId: row.movieId,
+        title: row.movieTitle,
+        directors: row.movieDirectors ?? '',
+        doubanRating: row.doubanRating,
+        personName: row.personName,
+        count: Number(row.count),
       })
     }
     return {

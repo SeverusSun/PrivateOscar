@@ -68,6 +68,8 @@ model SelectionItem {
   rank           Int?
   movieId        String
   movieTitle     String
+  movieDirectors String?
+  doubanRating   Float?
   personName     String?
 
   @@index([entryType, awardId, movieId, personName])
